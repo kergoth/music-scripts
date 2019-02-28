@@ -132,8 +132,8 @@ get_new_filename () {
         else
             albumdir="[unknown]"
         fi
-        artistdir="$(echo "$artistdir" | tr ':/' '：／' | sed -e 's/^\.//')"
-        albumdir="$(echo "$albumdir" | tr ':/' '：／' | sed -e 's/^\.//')"
+        artistdir="$(echo "$artistdir" | tr ':/' '∶／' | sed -e 's/^\.//')"
+        albumdir="$(echo "$albumdir" | tr ':/' '∶／' | sed -e 's/^\.//')"
         destdir="$artistdir/$albumdir"
         newfn="$(echo "$newfn" | tr ':/' '：／')"
         destfn="$source_dir/$destdir/$newfn"
