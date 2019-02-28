@@ -1,0 +1,259 @@
+#!/bin/sh
+
+. "$(dirname "$0")/trap.sh"
+
+case "$BASH_VERSION" in
+    '')
+        trap 'rm -f $cleanfiles; on_exit' EXIT
+        ;;
+    *)
+        trap 'rm -f $cleanfiles' EXIT
+        ;;
+esac
+# trap 'rm -f $cleanfiles' EXIT
+
+PATH="$(cd "$(dirname "$0")" && pwd):$PATH"
+
+set -e
+
+usage () {
+    echo >&2 "${0##*/} [-n] SOURCE_DIR [SOURCE_DIR..]"
+    exit 2
+}
+
+die () {
+    ret="$1"
+    shift
+    fmt="$1"
+    shift
+    printf >&2 "Error: $fmt\n" "$@"
+    exit $ret
+}
+
+get_metadata () {
+    fn="$1"
+    shift
+    pat="$(echo "$@" | sed -e 's/  */ /g')"
+    ffprobe -loglevel quiet -of compact=p=0 -show_entries format_tags "$fn" \
+        | tr '|' '\n' \
+        | sed -e 's/tag://' \
+        | grep -v '\\r' \
+        | while IFS="=" read -r key value; do
+            if [ -z "$key" ]; then
+                continue
+            fi
+            case "$key" in
+                *\ *)
+                    key="$(echo "$key" | tr " " _)"
+                    ;;
+            esac
+            key="$(printf '%s\n' "$key" | tr ".:/-#=\`" "_______" | tr "[:upper:]" "[:lower:]" | tr -d '\')"
+            case " $pat " in
+                *\ $key\ *)
+                    ;;
+                *)
+                    continue
+                    ;;
+            esac
+            value="$(printf '%s\n' "$value" | sed -e 's/"/\\"/g; s/\\$//; s/`/\\`/g')"
+            printf '%s="%s"\n' "$key" "$value"
+        done
+}
+
+eval_metadata () {
+    # get_metadata "$@" | while read -r line; do
+    #     ( eval "$line" ) >/dev/null 2>&1 || die 1 'Unable to eval `%s`' "$line"
+    # done
+    eval "$(get_metadata "$@")"
+}
+
+get_tracknumber () {
+    case "$track" in
+        */*)
+            tracknumber="${track%/*}"
+            tracktotal="${track##*/}"
+            ;;
+        '')
+            ;;
+        *)
+            tracknumber="$track"
+            ;;
+    esac
+    if [ -z "$tracknumber" ]; then
+        return 1
+    fi
+    if [ -z "$tracktotal" ] && [ -n "$totaltracks" ]; then
+        tracktotal="$totaltracks"
+    fi
+    printf "$tracknumber"
+    if [ -n "$tracktotal" ]; then
+        printf "/$tracktotal"
+    fi
+    printf '\n'
+}
+
+get_discnumber () {
+    case "$disc" in
+        */*)
+            discnumber="${disc%/*}"
+            disctotal="${disc##*/}"
+            ;;
+        '')
+            ;;
+        *)
+            discnumber="$disc"
+            ;;
+    esac
+    if [ -z "$discnumber" ]; then
+        discnumber=1
+    fi
+    if [ -z "$disctotal" ] && [ -n "$totaldiscs" ]; then
+        disctotal="$totaldiscs"
+    fi
+    printf "$discnumber"
+    if [ -n "$disctotal" ]; then
+        printf "/$disctotal"
+    fi
+    printf '\n'
+}
+
+md_vars="track tracknumber tracktotal totaltracks \
+         disc discnumber disctotal totaldiscs \
+         artist album_artist title album compilation"
+get_new_filename () {
+    fn="$1"
+    source_dir="$2"
+    compilation=
+    (
+        eval_metadata "$fn" $md_vars || die "Failed to eval metadata for $fn"
+
+        oldtracktotal="$tracktotal"
+        track="$(get_tracknumber || :)"
+        case "$track" in
+            */*)
+                tracknumber="${track%/*}"
+                tracktotal="${track##*/}"
+                ;;
+            *)
+                tracknumber="$track"
+                tracktotal=
+                ;;
+        esac
+
+        disc="$(get_discnumber)" || :
+        case "$disc" in
+            */*)
+                discnumber="${disc%/*}"
+                disctotal="${disc##*/}"
+                ;;
+            *)
+                discnumber="$disc"
+                disctotal=1
+                ;;
+        esac
+
+        if [ -n "$tracknumber" ]; then
+            newfn="$tracknumber - "
+        else
+            newfn=
+        fi
+
+        if ( [ -n "$compilation" ] && [ "$compilation" = 1 ] ) || \
+           ( [ -n "$album_artist" ] && [ "$album_artist" = "Various Artists" ] ); then
+            newfn="$newfn$artist - "
+        fi
+        newfn="$newfn$title.${fn##*.}"
+        if [ "$disctotal" != 1 ]; then
+            newfn="$discnumber-$newfn"
+        fi
+        if [ -n "$compilation" ] && [ "$compilation" -eq 1 ]; then
+            artistdir=Compilations
+        elif [ -n "$album_artist" ]; then
+            artistdir="$album_artist"
+        elif [ -n "$artist" ]; then
+            artistdir="$artist"
+        else
+            artistdir="[unknown]"
+        fi
+        if [ -n "$album" ]; then
+            albumdir="$album"
+        else
+            albumdir="[unknown]"
+        fi
+        artistdir="$(echo "$artistdir" | tr ':/' '：／' | sed -e 's/^\.//')"
+        albumdir="$(echo "$albumdir" | tr ':/' '：／' | sed -e 's/^\.//')"
+        destdir="$artistdir/$albumdir"
+        newfn="$(echo "$newfn" | tr ':/' '：／')"
+        destfn="$source_dir/$destdir/$newfn"
+        echo "$destfn"
+    )
+}
+
+alias link='ln -fv'
+
+if [ $# -eq 0 ]; then
+    set -- .
+fi
+
+dry_run=0
+while getopts nh opt; do
+    case "$opt" in
+        n)
+            dry_run=1
+            ;;
+        \? | h)
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+if [ $# -eq 0 ]; then
+    usage
+fi
+
+audiofiles="$(mktemp -t "${0##*/}.XXXXXX")" || exit 1
+otherfiles="$(mktemp -t "${0##*/}.XXXXXX")" || exit 1
+cleanfiles="$audiofiles"
+trap 'rm -f "$audiofiles"' INT TERM
+
+for source_dir; do
+    if [ ! -e "$source_dir" ]; then
+        continue
+    fi
+    source_dir="${source_dir%/}"
+    find "$source_dir" -not -name ._\* \( -iname \*.flac -o -iname \*mp3 -o -iname \*.m4a -o -iname \*.ogg -o -iname \*.dsf \) >"$audiofiles"
+    while read -r fn; do
+        newfn="$(get_new_filename "$fn" "$source_dir")"
+        if [ "$fn" != "$newfn" ] && ! [ -e "$newfn" ]; then
+            newfndir="$(dirname "$newfn")"
+            if [ $dry_run -eq 0 ]; then
+                mkdir -p "$newfndir"
+            fi
+
+            if [ $dry_run -eq 1 ]; then
+                echo "$fn -> $newfn"
+            else
+                mv -v "$fn" "$newfn"
+            fi
+
+            oldfndir="$(dirname "$fn")"
+            if ! echo "$oldfndir" | grep -qix "$newfndir"; then
+                # Non-audio files
+                find "$oldfndir" -type f -not \( -iname \*.flac -o -iname \*mp3 -o -iname \*.m4a -o -iname \*.ogg -o -iname \*.dsf \) \
+                    | while read -r efn; do
+                        newefn="$newfndir/${efn##*/}"
+                        if ! grep -qx "$efn" "$otherfiles" && ! [ -e "$newefn" ]; then
+                            echo "$efn" >>"$otherfiles"
+                            if [ $dry_run -eq 1 ]; then
+                                echo "$efn -> $newefn"
+                            else
+                                mv -v "$efn" "$newefn"
+                            fi
+                        fi
+                    done
+                remove_empty_dir "$oldfndir"
+            fi
+        fi
+    done <"$audiofiles"
+done

@@ -1,0 +1,12 @@
+#!/bin/sh
+
+for dir; do
+    find "$dir"/ -type f -name .DS_Store -print
+    find "$dir"/ -type f -name 'Icon' -print
+    find "$dir"/ -type f -empty -print
+    find "$dir"/ -type d -empty -print
+    find "$dir"/ -type f -name .DS_Store -delete
+    find "$dir"/ -type f -name 'Icon' -delete
+    find "$dir"/ -type f -empty -delete
+    find "$dir"/ -type d -empty -delete
+done
