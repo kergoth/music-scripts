@@ -1,6 +1,7 @@
 #!/bin/sh
 
 for dir; do
+    dir="$(abspath "$dir")"
     find "$dir"/ -type f -name .DS_Store -print
     find "$dir"/ -type f -name 'Icon' -print
     find "$dir"/ -type f -empty -print
