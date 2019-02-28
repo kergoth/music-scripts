@@ -204,7 +204,7 @@ for source_dir; do
                             fi
                         fi
                     done
-                remove_empty_dir "$oldfndir"
+                remove-empty-dirs "$oldfndir"
             fi
         fi
     done <"$audiofiles"
