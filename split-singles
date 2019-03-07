@@ -13,7 +13,7 @@ samplersdir="./_Samplers"
 # Genres that get their own toplevel directories to ease navigation
 # Game and Soundtrack also get flattened, as I rarely browse them by artist
 hoistedgenresdir="./_%s Albums"
-hoisted_genres="Game|Soundtrack"
+hoisted_genres="Game|Soundtrack|Christmas"
 
 # Games with data tracks and amazon albums whose videos and booklets are
 # counted in the track total. This blacklist only allows one track to be
