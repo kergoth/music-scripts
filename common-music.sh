@@ -30,13 +30,15 @@ get_metadata () {
                     ;;
             esac
             key="$(printf '%s\n' "$key" | tr ".:/-#=\`" "_______" | tr "[:upper:]" "[:lower:]" | tr -d '\')"
-            case " $pat " in
-                *\ $key\ *)
-                    ;;
-                *)
-                    continue
-                    ;;
-            esac
+            if [ -n "$pat" ]; then
+                case " $pat " in
+                    *\ $key\ *)
+                        ;;
+                    *)
+                        continue
+                        ;;
+                esac
+            fi
             value="$(printf '%s\n' "$value" | sed -e 's/"/\\"/g; s/\\$//; s/`/\\`/g')"
             printf '%s="%s"\n' "$key" "$value"
         done
