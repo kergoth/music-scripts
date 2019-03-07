@@ -113,6 +113,7 @@ get_new_filename () {
         if ( [ -n "$compilation" ] && [ "$compilation" = 1 ] ) \
             || ( [ -n "$album_artist" ] && echo "$album_artist" | grep -qi '^various' ); then
             newfn="$newfn$artist - "
+            compilation=1
         fi
         newfn="$newfn$title.${fn##*.}"
         if [ "$disctotal" != 1 ]; then
