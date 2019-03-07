@@ -13,7 +13,7 @@ singletracksdir="./_Single Tracks"
 # Games with data tracks and amazon albums whose videos and booklets are
 # counted in the track total. This blacklist only allows one track to be
 # missing at this time.
-incomplete_blacklist="Descent|Shadow Warrior|Fantasy General|Stargunner Original Soundtrack|King's Quest VI Heir Today, Gone Tomorrow|Command & Conquer Red Alert Counterstrike|Command & Conquer Tiberian Dawn Covert Operations|Warcraft II Tides of Darkness|Total Annihilation|Moto Racer|Return to Zork|Quake|.*\\[\\+video\\]|.*\\[\\+Digital Booklet\\]"
+incomplete_blacklist="Descent|Shadow Warrior|Fantasy General|Stargunner Original Soundtrack|King's Quest VI Heir Today, Gone Tomorrow|Command & Conquer： Red Alert： Counterstrike|Command & Conquer： Tiberian Dawn： Covert Operations|Warcraft II： Tides of Darkness|Total Annihilation|Moto Racer|Return to Zork|Quake|Hexen II|.*\\[\\+video\\]|.*\\[\\+Digital Booklet\\]"
 
 if which gln >/dev/null 2>&1; then
     alias link='gln -rsfv'
