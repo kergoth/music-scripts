@@ -9,6 +9,7 @@ extrasdir="./_Albums With Extra Tracks"
 incompletedir="./_Incomplete Albums"
 singlesdir=./_Singles
 singletracksdir="./_Single Tracks"
+samplersdir="./_Samplers"
 
 # Games with data tracks and amazon albums whose videos and booklets are
 # counted in the track total. This blacklist only allows one track to be
@@ -174,6 +175,12 @@ for source_dir; do
                 d="$singletracksdir"
             fi
         fi
+
+        # Special case
+        if echo "$base" | grep -wi sampler; then
+            d="$samplersdir"
+        fi
+
         if [ "$d" = "$singletracksdir" ]; then
             mkdir -p "$d"
             find "$dir/" -not -name ._\* \( -iname \*.flac -o -iname \*mp3 -o -iname \*.m4a -o -iname \*.ogg \) \
