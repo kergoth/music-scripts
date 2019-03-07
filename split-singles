@@ -10,6 +10,10 @@ incompletedir="./_Incomplete Albums"
 singlesdir=./_Singles
 singletracksdir="./_Single Tracks"
 samplersdir="./_Samplers"
+# Genres that get their own toplevel directories to ease navigation
+# Game and Soundtrack also get flattened, as I rarely browse them by artist
+hoistedgenresdir="./_%s Albums"
+hoisted_genres="Game|Soundtrack"
 
 # Games with data tracks and amazon albums whose videos and booklets are
 # counted in the track total. This blacklist only allows one track to be
@@ -128,6 +132,51 @@ get_album_track_total() {
         )
 }
 
+get_genre() {
+    genre="$(eval_common_metadata "$1" genre)"
+    if [ -z "$genre" ]; then
+        # shellcheck disable=SC2016
+        genre="$(exiftool -qm -AlbumGenre -p '$AlbumGenre' "$1" 2>/dev/null | xargs)"
+        if [ -z "$genre" ]; then
+            # shellcheck disable=SC2016
+            genre="$(exiftool -qm -Genre -p '$Genre' "$1" 2>/dev/null | xargs)"
+        fi
+    fi
+
+    # Sanitize / Improve consistency. Better plan: fix the tags
+    case "$genre" in
+        None|''|Miscellaneous|Other|Unclassifiable|hSH)
+            genre=
+            ;;
+        Soundtracks)
+            genre=Soundtrack
+            ;;
+        Videogame|Video\ Game*)
+            genre=Game
+            ;;
+        Dance\ \&\ DJ)
+            genre=Dance
+            ;;
+        Heavy\ Metal)
+            genre=Metal
+            ;;
+        Holiday)
+            genre=Christmas
+            ;;
+    esac
+    if [ "$genre" != Game ]; then
+        if [ "$releasetype" = soundtrack ] \
+            || basename "$dir" | grep -qi soundtrack \
+            || basename "$dir" | grep -qiw ost; then
+            genre=Soundtrack
+        fi
+    fi
+    if [ -z "$genre" ]; then
+        genre=Unknown\ Genre
+    fi
+    echo "$genre"
+}
+
 for source_dir; do
     if [ "$(cd "$source_dir" && pwd -P)" = "$(pwd -P)" ]; then
         # Don't recurse into ourselves
@@ -191,8 +240,15 @@ for source_dir; do
         else
             rel="$(relpath "$dir" "$source_dir")"
             dest="$d/$rel"
-            destdir="$(dirname "$dest")"
+            if [ -n "$hoisted_genres" ]; then
+                genre="$(get_genre "$first")"
+                if echo "$genre" | grep -Eqx "$hoisted_genres"; then
+                    d="$(printf "$hoistedgenresdir" "$genre")"
+                    dest="$d/$(basename "$rel")"
+                fi
+            fi
 
+            destdir="$(dirname "$dest")"
             echo "$rel: $count / $total"
             mkdir -p "$destdir"
             if [ -h "$dest" ]; then
