@@ -105,6 +105,7 @@ eval_common_metadata() {
     if [ $# -eq 0 ]; then
         set -- $md_vars
     fi
+    unset "$@"
     eval_metadata "$fn" "$@"
 }
 
