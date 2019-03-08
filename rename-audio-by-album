@@ -63,13 +63,39 @@ otherfiles="$(mktemp -t "${0##*/}.XXXXXX")" || exit 1
 cleanfiles="$audiofiles"
 trap 'rm -f "$audiofiles"' INT TERM
 
+preparebar() {
+# $1 - bar length
+# $2 - bar char
+    barlen=$1
+    barspaces=$(printf "%*s" "$1")
+    barchars=$(printf "%*s" "$1" | tr ' ' "$2")
+}
+
+progressbar() {
+# $1 - number (-1 for clearing the bar)
+# $2 - max number
+    if [ $1 -eq -1 ]; then
+        printf "\r  $barspaces\r"
+    else
+        barch=$(($1*barlen/$2))
+        barsp=$((barlen-barch))
+        printf "\r${3:+$3 }[%.${barch}s%.${barsp}s] ${4:+ $4}$barspaces\r" "$barchars" "$barspaces"
+    fi
+}
+
+preparebar 40 "▇"
 for source_dir; do
     if [ ! -e "$source_dir" ]; then
         continue
     fi
     source_dir="${source_dir%/}"
     music_find "$source_dir" >"$audiofiles"
+    filecount=$(wc -l <"$audiofiles" | xargs)
+    curcount=0
+    progressbar -1 "$filecount" "${source_dir##*/}" "$curcount/$filecount    "
     while read -r fn; do
+        curcount=$((curcount + 1))
+        progressbar $curcount "$filecount" "${source_dir##*/}" "$curcount/$filecount    "
         newfn="$(get_new_filename ${separate_discs+-d} "$fn" "$source_dir")"
         if [ "$fn" != "$newfn" ] && ! [ -e "$newfn" ]; then
             newfndir="$(dirname "$newfn")"
@@ -102,4 +128,5 @@ for source_dir; do
             fi
         fi
     done <"$audiofiles"
+    echo
 done
