@@ -294,7 +294,7 @@ get_genre() {
         Soundtracks)
             genre=Soundtrack
             ;;
-        Videogame|Video\ Game*)
+        Videogame|Video\ Game*|Vgm)
             genre=Game
             ;;
         Dance\ \&\ DJ)
