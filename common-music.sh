@@ -219,7 +219,7 @@ music_find () {
 nonmusic_find () {
     finddir="$1"
     shift
-    find -H "$finddir" -type f -not \( -name ._\* -o -iname \*.flac -o -iname \*mp3 -o -iname \*.m4a -o -iname \*.ogg -o -iname \*.dsf \) \
+    find -H "$finddir" -type f -not \( -name ._\* -o -iname \*.flac -o -iname \*mp3 -o -iname \*.m4a -o -iname \*.ogg -o -iname \*.dsf \) "$@"
 }
 
 # We need to get the total tracks for all discs to get a true total
