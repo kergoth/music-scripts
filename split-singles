@@ -35,7 +35,7 @@ usage() {
 }
 
 individual=0
-while getopts i:h opt; do
+while getopts ih opt; do
     case "$opt" in
         i)
             individual=1
