@@ -67,19 +67,12 @@ eval_common_metadata() {
 }
 
 get_new_filename() {
-    separate_disc_folders=0
-    OPTIND=0
-    while getopts d opt; do
-        case "$opt" in
-            d)
-                separate_disc_folders=1
-                ;;
-            *)
-                return 1
-                ;;
-        esac
-    done
-    shift $((OPTIND - 1))
+    if [ "$1" = "-d" ]; then
+        separate_disc_folders=1
+        shift
+    else
+        separate_disc_folders=0
+    fi
 
     fn="$1"
     source_dir="$2"
