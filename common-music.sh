@@ -104,7 +104,7 @@ get_new_filename () {
             newfn=
         fi
 
-        if echo "$releasetype" | tr ',' ' ' | grep -qwi compilation \
+        if echo "$releasetype" | tr '/,' '  ' | grep -qwi compilation \
             || ( [ -n "$compilation" ] && [ "$compilation" = 1 ] ) \
             || ( [ -n "$album_artist" ] && echo "$album_artist" | grep -qi '^various' ); then
             newfn="$newfn$artist - "
@@ -311,7 +311,7 @@ get_genre() {
     base="$(basename "$(dirname "$1")")"
     if [ "$genre" != Game ] \
        && [ -z "$2" ] || ! echo "$base" | grep -qEx "$2"; then
-        if echo "$releasetype" | tr ',' ' ' | grep -qwi soundtrack \
+        if echo "$releasetype" | tr '/,' '  ' | grep -qwi soundtrack \
             || echo "$base" | grep -qi soundtrack \
             || echo "$base" | grep -qiw ost; then
             genre=Soundtrack
