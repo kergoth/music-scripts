@@ -12,6 +12,10 @@ die () {
     exit $ret
 }
 
+fn_sanitize () {
+    echo "$@" | tr -d '™' | unidecode | tr ':/' '∶／' | sed -e 's/^\.//'
+}
+
 get_metadata () {
     fn="$1"
     shift
@@ -123,10 +127,10 @@ get_new_filename () {
         else
             albumdir="[unknown]"
         fi
-        artistdir="$(echo "$artistdir" | tr ':/' '∶／' | sed -e 's/^\.//')"
-        albumdir="$(echo "$albumdir" | tr ':/' '∶／' | sed -e 's/^\.//')"
+        artistdir="$(fn_sanitize "$artistdir")"
+        albumdir="$(fn_sanitize "$albumdir" | sed -e 's/^The \(.*\)/\1, The/')"
         destdir="$artistdir/$albumdir"
-        newfn="$(echo "$newfn" | tr ':/' '∶／')"
+        newfn="$(fn_sanitize "$newfn")"
         destfn="$source_dir/$destdir/$newfn"
         echo "$destfn"
     )
@@ -267,10 +271,12 @@ get_genre() {
             genre=Christmas
             ;;
     esac
-    if [ "$genre" != Game ]; then
+    base="$(basename "$(dirname "$1")")"
+    if [ "$genre" != Game ] \
+       && [ -z "$2" ] || ! echo "$base" | grep -qEx "$2"; then
         if echo "$releasetype" | tr ',' ' ' | grep -qwi soundtrack \
-            || basename "$dir" | grep -qi soundtrack \
-            || basename "$dir" | grep -qiw ost; then
+            || echo "$base" | grep -qi soundtrack \
+            || echo "$base" | grep -qiw ost; then
             genre=Soundtrack
         fi
     fi
