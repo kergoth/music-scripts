@@ -97,6 +97,10 @@ for source_dir; do
         curcount=$((curcount + 1))
         progressbar $curcount "$filecount" "${source_dir##*/}" "$curcount/$filecount    "
         newfn="$(get_new_filename ${separate_discs+-d} "$fn" "$source_dir")"
+        if [ -z "$newfn" ]; then
+            echo >&2 "Error: unable to determine new filename for $fn, skipping"
+            continue
+        fi
         if [ "$fn" != "$newfn" ] && ! [ -e "$newfn" ]; then
             newfndir="$(dirname "$newfn")"
             if [ $dry_run -eq 0 ]; then
