@@ -31,7 +31,12 @@ else
 fi
 
 usage() {
-    echo >&2 "${0##*/} [-r RELATIVETO] PATH [PATH..]"
+    cat >&2 <<END
+${0##*/} [options] LIBRARY_DIR [LIBRARY_DIR..]
+
+Options:
+    -i    Link tracks individually rather than album folders
+END
     exit 2
 }
 
@@ -52,12 +57,12 @@ if [ $# -eq 0 ]; then
     set -- .
 fi
 
-for source_dir; do
-    if [ "$(cd "$source_dir" && pwd -P)" = "$(pwd -P)" ]; then
+for library_dir; do
+    if [ "$(cd "$library_dir" && pwd -P)" = "$(pwd -P)" ]; then
         # Don't recurse into ourselves
         continue
     fi
-    for dir in "$source_dir"/*/*/; do
+    for dir in "$library_dir"/*/*/; do
         if [ ! -e "$dir" ]; then
             continue
         fi
@@ -109,7 +114,7 @@ for source_dir; do
             fi
         fi
 
-        rel="$(relpath "$dir" "$source_dir")"
+        rel="$(relpath "$dir" "$library_dir")"
         echo "$rel: $count / $total"
         if [ "$d" = "$singletracksdir" ]; then
             dest="$d"
