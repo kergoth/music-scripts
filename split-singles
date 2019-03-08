@@ -22,6 +22,7 @@ flattened_dirs="$samplersdir"
 # counted in the track total. This blacklist only allows one track to be
 # missing at this time.
 incomplete_blacklist="Descent Mac Game Soundtrack|Shadow Warrior|Fantasy General|Stargunner Original Soundtrack|King's Quest VI Heir Today, Gone Tomorrow|Command & Conquer： Red Alert： Counterstrike|Command & Conquer： Tiberian Dawn： Covert Operations|Warcraft II： Tides of Darkness|Total Annihilation|Moto Racer|Return to Zork|Quake|Hexen II|.*\\[\\+video\\]|.*\\[\\+Digital Booklet\\]"
+soundtrack_blacklist="Soundtrack For The Voices In My Head.*"
 
 if which gln >/dev/null 2>&1; then
     alias link='gln -rsf'
@@ -71,7 +72,7 @@ for source_dir; do
 
         genre= albumgenre= releasetype=
         eval_common_metadata "$first" genre albumgenre releasetype
-        genre="$(get_genre "$first")"
+        genre="$(get_genre "$first" "$soundtrack_blacklist")"
 
         if [ -z "$total" ]; then
             if [ $count -gt 1 ]; then
