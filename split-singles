@@ -31,19 +31,24 @@ ${0##*/} [options] LIBRARY_DIR [LIBRARY_DIR..]
 Options:
     -i    Link tracks individually rather than album folders
     -H    Hard link tracks rather than soft link (only useful with -i)
+    -d    Assume multi-disc albums are separated one disc per folder
 END
     exit 2
 }
 
 individual=0
 hard_link_individual=0
-while getopts iHh opt; do
+separated_disc_folders=0
+while getopts iHdh opt; do
     case "$opt" in
         i)
             individual=1
             ;;
         H)
             hard_link_individual=1
+            ;;
+        d)
+            separated_disc_folders=1
             ;;
         \? | h)
             usage
@@ -85,7 +90,11 @@ for library_dir; do
             continue
         fi
         first="$(music_find "$dir" | head -n 1)"
-        total="$(get_album_track_total "$dir/")"
+        if [ $separated_disc_folders -eq 1 ]; then
+            total="$(get_album_track_total_indiv_discs "$dir")"
+        else
+            total="$(get_album_track_total "$dir")"
+        fi
 
         genre= albumgenre= releasetype=
         eval_common_metadata "$first" genre albumgenre releasetype
