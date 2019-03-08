@@ -124,9 +124,9 @@ for source_dir; do
                             fi
                         fi
                     done
-                remove-empty-dirs "$oldfndir"
             fi
         fi
     done <"$audiofiles"
+    remove-empty-dirs "$source_dir" >/dev/null 2>&1
     echo
 done
