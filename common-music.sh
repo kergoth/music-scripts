@@ -21,6 +21,14 @@ fn_sanitize() {
 get_metadata() {
     fn="$1"
     shift
+
+    case "$fn" in
+        *.ogg)
+            get_metadata_exif "$fn" "$@"
+            return $?
+            ;;
+    esac
+
     pat="$(echo "$@" | sed -e 's/  */ /g')"
     ffprobe -loglevel quiet -of compact=p=0 -show_entries format_tags "$fn" \
         | tr '|' '\n' \
@@ -50,12 +58,45 @@ get_metadata() {
         done
 }
 
+get_metadata_exif() {
+    fn="$1"
+    shift
+    pat="$(echo "$@" | sed -e 's/  */ /g')"
+    exiftool -S "$fn" \
+        | sed -e 's/: /=/' \
+        | while IFS="=" read -r key value; do
+            if [ -z "$key" ]; then
+                continue
+            fi
+            case "$key" in
+                *\ *)
+                    key="$(echo "$key" | tr -d " ")"
+                    ;;
+            esac
+            key="$(printf '%s\n' "$key" | tr ".:/-#=\`" "_______" | tr "[:upper:]" "[:lower:]" | tr -d '\')"
+            if [ -n "$pat" ]; then
+                case " $pat " in
+                    *\ $key\ *) ;;
+
+                    *)
+                        continue
+                        ;;
+                esac
+            fi
+            value="$(printf '%s\n' "$value" | sed -e 's/"/\\"/g; s/\\$//; s/`/\\`/g')"
+            printf '%s="%s"\n' "$key" "$value"
+        done
+}
+
 eval_metadata() {
     # Useful for debugging shell syntax errors when eval'ing the metadata
     # get_metadata "$@" | while read -r line; do
     #     ( eval "$line" ) >/dev/null 2>&1 || die 1 'Unable to eval `%s`' "$line"
     # done
     eval "$(get_metadata "$@")"
+    if [ -z "$title" ]; then
+        eval "$(get_metadata_exif "$@")"
+    fi
 }
 
 eval_common_metadata() {
