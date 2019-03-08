@@ -1,5 +1,9 @@
 #!/bin/sh
 
+if which gfind >/dev/null 2>&1; then
+    alias find=gfind
+fi
+
 for dir; do
     dir="$(abspath "$dir")"
     find "$dir"/ -type f -name .DS_Store -print
