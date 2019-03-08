@@ -160,6 +160,9 @@ get_new_filename() {
         fn_tracknumber="$tracknumber"
         if [ "$disctotal" != 1 ] \
             || ([ -n "$discnumber" ] && [ "$discnumber" -gt 1 ]); then
+            if [ -z "$discsubtitle" ]; then
+                discsubtitle="$setsubtitle"
+            fi
             if [ $separate_disc_folders -eq 0 ]; then
                 if [ -n "$tracknumber" ]; then
                     fn_tracknumber="$discnumber-$tracknumber"
