@@ -287,23 +287,24 @@ get_genre() {
     fi
 
     # Sanitize / Improve consistency. Better plan: fix the tags
-    case "$genre" in
-        None|''|Miscellaneous|Other|Unclassifiable|hSH)
+    lower_genre="$(echo "$genre" | tr '[:upper:]' '[:lower:]')"
+    case "$lower_genre" in
+        none|''|miscellaneous|other|unclassifiable|hsh)
             genre=
             ;;
-        Soundtracks)
+        soundtracks)
             genre=Soundtrack
             ;;
-        Videogame|Video\ Game*|Vgm)
+        videogame|video\ game*|vgm)
             genre=Game
             ;;
-        Dance\ \&\ DJ)
+        dance\ \&\ dj)
             genre=Dance
             ;;
-        Heavy\ Metal)
+        heavy\ metal)
             genre=Metal
             ;;
-        Holiday)
+        holiday)
             genre=Christmas
             ;;
     esac
