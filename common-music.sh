@@ -14,7 +14,7 @@ die() {
 }
 
 fn_sanitize() {
-    echo "$@" | tr -d '™' | sed -e 's/^\.//; s/ :/:/g; s/:$//' | unidecode | tr ':/' '∶／'
+    echo "$@" | tr -d '™ ' | sed -e 's/^\.//; s/ :/:/g; s/:$//' | unidecode | tr ':/' '∶／'
 }
 
 get_metadata() {
