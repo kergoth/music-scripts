@@ -4,7 +4,7 @@ discnum_vars="disc discnumber disctotal totaldiscs"
 md_vars="$tracknum_vars $discnum_vars \
          artist album_artist title album compilation discsubtitle"
 
-die () {
+die() {
     ret="$1"
     shift
     fmt="$1"
@@ -13,11 +13,11 @@ die () {
     exit $ret
 }
 
-fn_sanitize () {
-    echo "$@" | tr -d '™' | sed -e 's/^\.//; s/ :/:/g; s/:$//' | unidecode | tr ':/' '∶／' 
+fn_sanitize() {
+    echo "$@" | tr -d '™' | sed -e 's/^\.//; s/ :/:/g; s/:$//' | unidecode | tr ':/' '∶／'
 }
 
-get_metadata () {
+get_metadata() {
     fn="$1"
     shift
     pat="$(echo "$@" | sed -e 's/  */ /g')"
@@ -37,8 +37,8 @@ get_metadata () {
             key="$(printf '%s\n' "$key" | tr ".:/-#=\`" "_______" | tr "[:upper:]" "[:lower:]" | tr -d '\')"
             if [ -n "$pat" ]; then
                 case " $pat " in
-                    *\ $key\ *)
-                        ;;
+                    *\ $key\ *) ;;
+
                     *)
                         continue
                         ;;
@@ -49,7 +49,7 @@ get_metadata () {
         done
 }
 
-eval_metadata () {
+eval_metadata() {
     # Useful for debugging shell syntax errors when eval'ing the metadata
     # get_metadata "$@" | while read -r line; do
     #     ( eval "$line" ) >/dev/null 2>&1 || die 1 'Unable to eval `%s`' "$line"
@@ -57,7 +57,7 @@ eval_metadata () {
     eval "$(get_metadata "$@")"
 }
 
-eval_common_metadata () {
+eval_common_metadata() {
     fn="$1"
     shift
     if [ $# -eq 0 ]; then
@@ -66,7 +66,7 @@ eval_common_metadata () {
     eval_metadata "$fn" "$@"
 }
 
-get_new_filename () {
+get_new_filename() {
     separate_disc_folders=0
     OPTIND=0
     while getopts d opt; do
@@ -85,7 +85,16 @@ get_new_filename () {
     source_dir="$2"
     compilation=
     (
-        eval_common_metadata "$1" || die 1 "Failed to eval metadata for $fn"
+        eval_common_metadata "$1" \
+            || {
+                echo >&2 "Failed to eval metadata for $fn"
+                return 1
+            }
+
+        if [ -z "$title" ]; then
+            echo >&2 "Error: no title for $fn"
+            return 1
+        fi
 
         oldtracktotal="$tracktotal"
         track="$(get_tracknumber || :)"
@@ -120,7 +129,7 @@ get_new_filename () {
 
         fn_tracknumber="$tracknumber"
         if [ "$disctotal" != 1 ] \
-            || ( [ -n "$discnumber" ] && [ "$discnumber" -gt 1 ] ); then
+            || ([ -n "$discnumber" ] && [ "$discnumber" -gt 1 ]); then
             if [ $separate_disc_folders -eq 0 ]; then
                 if [ -n "$tracknumber" ]; then
                     fn_tracknumber="$discnumber-$tracknumber"
@@ -143,8 +152,8 @@ get_new_filename () {
         fi
 
         if echo "$releasetype" | tr '/,' '  ' | grep -qwi compilation \
-            || ( [ -n "$compilation" ] && [ "$compilation" = 1 ] ) \
-            || ( [ -n "$album_artist" ] && echo "$album_artist" | grep -qi '^various' ); then
+            || ([ -n "$compilation" ] && [ "$compilation" = 1 ]) \
+            || ([ -n "$album_artist" ] && echo "$album_artist" | grep -qi '^various'); then
             newfn="$newfn$artist - "
             compilation=1
         fi
@@ -242,13 +251,13 @@ get_album_track_total_indiv_discs() {
     )
 }
 
-music_find () {
+music_find() {
     finddir="$1"
     shift
     find -H "$finddir" -type f -not -name ._\* \( -iname \*.flac -o -iname \*mp3 -o -iname \*.m4a -o -iname \*.ogg -o -iname \*.dsf \) "$@"
 }
 
-nonmusic_find () {
+nonmusic_find() {
     finddir="$1"
     shift
     find -H "$finddir" -type f -not \( -name ._\* -o -iname \*.flac -o -iname \*mp3 -o -iname \*.m4a -o -iname \*.ogg -o -iname \*.dsf \) "$@"
@@ -321,13 +330,13 @@ get_genre() {
     # Sanitize / Improve consistency. Better plan: fix the tags
     lower_genre="$(echo "$genre" | tr '[:upper:]' '[:lower:]')"
     case "$lower_genre" in
-        none|''|miscellaneous|other|unclassifiable|hsh)
+        none | '' | miscellaneous | other | unclassifiable | hsh)
             genre=
             ;;
         soundtracks)
             genre=Soundtrack
             ;;
-        videogame|video\ game*|vgm|game*)
+        videogame | video\ game* | vgm | game*)
             genre=Game
             ;;
         dance\ \&\ dj)
@@ -342,7 +351,7 @@ get_genre() {
     esac
     base="$(basename "$(dirname "$1")")"
     if [ "$genre" != Game ] \
-        && ( [ -z "$2" ] || ! echo "$base" | grep -qEx "$2" ); then
+        && ([ -z "$2" ] || ! echo "$base" | grep -qEx "$2"); then
         if echo "$releasetype" | tr '/,' '  ' | grep -qwi soundtrack \
             || echo "$base" | grep -qi soundtrack \
             || echo "$base" | grep -qiw ost; then
@@ -354,4 +363,3 @@ get_genre() {
     fi
     echo "$genre"
 }
-
