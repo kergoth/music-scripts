@@ -186,10 +186,22 @@ get_discnumber() {
     printf '\n'
 }
 
+music_find () {
+    finddir="$1"
+    shift
+    find -H "$finddir" -type f -not -name ._\* \( -iname \*.flac -o -iname \*mp3 -o -iname \*.m4a -o -iname \*.ogg -o -iname \*.dsf \) "$@"
+}
+
+nonmusic_find () {
+    finddir="$1"
+    shift
+    find -H "$finddir" -type f -not \( -name ._\* -o -iname \*.flac -o -iname \*mp3 -o -iname \*.m4a -o -iname \*.ogg -o -iname \*.dsf \) \
+}
+
 # We need to get the total tracks for all discs to get a true total
 get_album_track_total() {
-    file_count=$(find "$1/" -not -name ._\* \( -iname \*.flac -o -iname \*mp3 -o -iname \*.m4a -o -iname \*.ogg -o -iname \*.dsf \) | wc -l)
-    find "$1/" -not -name ._\* \( -iname \*.flac -o -iname \*mp3 -o -iname \*.m4a -o -iname \*.ogg -o -iname \*.dsf \) \
+    file_count="$(music_find "$1" | wc -l)"
+    music_find "$1" \
         | (
             total=0
             while read -r fn; do

@@ -55,7 +55,7 @@ for source_dir; do
         continue
     fi
     source_dir="${source_dir%/}"
-    find "$source_dir" -not -name ._\* \( -iname \*.flac -o -iname \*mp3 -o -iname \*.m4a -o -iname \*.ogg -o -iname \*.dsf \) >"$audiofiles"
+    music_find "$source_dir" >"$audiofiles"
     while read -r fn; do
         newfn="$(get_new_filename "$fn" "$source_dir")"
         if [ "$fn" != "$newfn" ] && ! [ -e "$newfn" ]; then
@@ -73,7 +73,7 @@ for source_dir; do
             oldfndir="$(dirname "$fn")"
             if ! echo "$oldfndir" | grep -qix "$newfndir"; then
                 # Non-audio files
-                find "$oldfndir" -type f -not \( -iname \*.flac -o -iname \*mp3 -o -iname \*.m4a -o -iname \*.ogg -o -iname \*.dsf \) \
+                nonmusic_find "$oldfndir" \
                     | while read -r efn; do
                         newefn="$newfndir/${efn##*/}"
                         if ! grep -qx "$efn" "$otherfiles" && ! [ -e "$newefn" ]; then
