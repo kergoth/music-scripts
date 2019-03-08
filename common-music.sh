@@ -1,6 +1,7 @@
 # Commonly used metadata variables
-md_vars="track tracknumber tracktotal totaltracks \
-         disc discnumber disctotal totaldiscs \
+tracknum_vars="track tracknumber tracktotal totaltracks"
+discnum_vars="disc discnumber disctotal totaldiscs"
+md_vars="$tracknum_vars $discnum_vars \
          artist album_artist title album compilation"
 
 die () {
@@ -184,6 +185,29 @@ get_discnumber() {
         printf "/$disctotal"
     fi
     printf '\n'
+}
+
+# We need to get the total tracks for all discs to get a true total
+get_album_track_total_indiv_discs() {
+    first_track="$(music_find "$1" | head -n 1)"
+    (
+        eval_common_metadata "$1" $tracknum_vars
+
+        track="$(get_tracknumber)"
+        case "$track" in
+            */*)
+                tracktotal="${track##*/}"
+                ;;
+            *)
+                tracktotal=
+                ;;
+        esac
+        if [ -n "$tracktotal" ]; then
+            echo "$tracktotal"
+        else
+            return 1
+        fi
+    )
 }
 
 music_find () {
