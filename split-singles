@@ -24,27 +24,26 @@ flattened_dirs="$samplersdir"
 incomplete_blacklist="Descent Mac Game Soundtrack|Shadow Warrior|Fantasy General|Stargunner Original Soundtrack|King's Quest VI Heir Today, Gone Tomorrow|Command & Conquer： Red Alert： Counterstrike|Command & Conquer： Tiberian Dawn： Covert Operations|Warcraft II： Tides of Darkness|Total Annihilation|Moto Racer|Return to Zork|Quake|Hexen II|.*\\[\\+video\\]|.*\\[\\+Digital Booklet\\]"
 soundtrack_blacklist="Soundtrack For The Voices In My Head.*"
 
-if which gln >/dev/null 2>&1; then
-    alias link='gln -rsf'
-else
-    alias link='ln -rsf'
-fi
-
 usage() {
     cat >&2 <<END
 ${0##*/} [options] LIBRARY_DIR [LIBRARY_DIR..]
 
 Options:
     -i    Link tracks individually rather than album folders
+    -H    Hard link tracks rather than soft link (only useful with -i)
 END
     exit 2
 }
 
 individual=0
-while getopts ih opt; do
+hard_link_individual=0
+while getopts iHh opt; do
     case "$opt" in
         i)
             individual=1
+            ;;
+        H)
+            hard_link_individual=1
             ;;
         \? | h)
             usage
@@ -55,6 +54,19 @@ shift $((OPTIND - 1))
 
 if [ $# -eq 0 ]; then
     set -- .
+fi
+
+linkargs=
+if [ $hard_link_individual -eq 0 ]; then
+    linkargs="$linkargs -sr"
+elif [ $individual -eq 0 ]; then
+    echo >&2 "Warning: -H has no effect without -i"
+fi
+
+if which gln >/dev/null 2>&1; then
+    alias link="gln $linkargs"
+else
+    alias link="ln $linkargs"
 fi
 
 for library_dir; do
