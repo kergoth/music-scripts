@@ -310,7 +310,7 @@ get_genre() {
     esac
     base="$(basename "$(dirname "$1")")"
     if [ "$genre" != Game ] \
-       && [ -z "$2" ] || ! echo "$base" | grep -qEx "$2"; then
+        && ( [ -z "$2" ] || ! echo "$base" | grep -qEx "$2" ); then
         if echo "$releasetype" | tr '/,' '  ' | grep -qwi soundtrack \
             || echo "$base" | grep -qi soundtrack \
             || echo "$base" | grep -qiw ost; then
