@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 . "$(dirname "$0")/common-music.sh"
 
@@ -69,13 +69,18 @@ elif [ $individual -eq 0 ]; then
 fi
 
 if which gln >/dev/null 2>&1; then
-    alias link="gln $linkargs"
+    link () {
+        gln $linkargs "$@"
+    }
 else
-    alias link="ln $linkargs"
+    link () {
+        ln $linkargs "$@"
+    }
 fi
 
 for library_dir; do
-    if [ "$(cd "$library_dir" && pwd -P)" = "$(pwd -P)" ]; then
+    library_dir="$(abspath "$library_dir")"
+    if [ "$library_dir" = "$(pwd -P)" ]; then
         # Don't recurse into ourselves
         continue
     fi
@@ -90,14 +95,13 @@ for library_dir; do
             continue
         fi
         first="$(music_find "$dir" | head -n 1)"
+        eval_common_metadata "$first"
+
         if [ $separated_disc_folders -eq 1 ]; then
             total="$(get_album_track_total_indiv_discs "$dir")"
         else
             total="$(get_album_track_total "$dir")"
         fi
-
-        genre= albumgenre= releasetype=
-        eval_common_metadata "$first" genre albumgenre releasetype
         genre="$(get_genre "$first" "$soundtrack_blacklist")"
 
         if [ -z "$total" ]; then
@@ -136,27 +140,20 @@ for library_dir; do
         fi
 
         rel="$(relpath "$dir" "$library_dir")"
-        echo "$rel: $count / $total"
+        echo "$rel: $count / $total -> $d"
         if [ "$d" = "$singletracksdir" ]; then
             dest="$d"
             mkdir -p "$dest"
-            find "$dir/" -not -name ._\* \( -iname \*.flac -o -iname \*mp3 -o -iname \*.m4a -o -iname \*.ogg \) \
-                | while read -r fn; do
-                    ext="${fn##*.}"
-                    (
-                        artist= title=
-                        eval_common_metadata "$fn" artist title
-                        if [ -z "$artist" ]; then
-                            artist="[unknown]"
-                        fi
-                        newfn="$(fn_sanitize "$artist - $title.$ext")"
-                        if [ -e "$dest/$newfn" ]; then
-                            echo >&2 "Error: $dest/$newfn already exists, can't link from $dir"
-                            continue
-                        fi
-                        link "$fn" "$dest/$newfn"
-                    )
-                done
+            ext="${first##*.}"
+            if [ -z "$artist" ]; then
+                artist="[unknown]"
+            fi
+            newfirst="$(fn_sanitize "$artist - $title.$ext")"
+            if [ -e "$dest/$newfirst" ]; then
+                echo >&2 "Error: $dest/$newfirst already exists, can't link from $dir"
+                continue
+            fi
+            link "$first" "$dest/$newfirst"
         else
             dest=
             if [ -n "$hoisted_genres" ] || [ -n "$flattened_genres" ]; then

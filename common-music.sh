@@ -121,12 +121,6 @@ get_new_filename() {
     source_dir="$2"
     compilation=
     (
-        eval_common_metadata "$1" \
-            || {
-                echo >&2 "Failed to eval metadata for $fn"
-                return 1
-            }
-
         if [ -z "$title" ]; then
             echo >&2 "Error: no title for $fn"
             return 1
@@ -266,25 +260,20 @@ get_discnumber() {
 
 # We need to get the total tracks for all discs to get a true total
 get_album_track_total_indiv_discs() {
-    first_track="$(music_find "$1" | head -n 1)"
-    (
-        eval_common_metadata "$1" $tracknum_vars
-
-        track="$(get_tracknumber)"
-        case "$track" in
-            */*)
-                tracktotal="${track##*/}"
-                ;;
-            *)
-                tracktotal=
-                ;;
-        esac
-        if [ -n "$tracktotal" ]; then
-            echo "$tracktotal"
-        else
-            return 1
-        fi
-    )
+    track="$(get_tracknumber)"
+    case "$track" in
+        */*)
+            tracktotal="${track##*/}"
+            ;;
+        *)
+            tracktotal=
+            ;;
+    esac
+    if [ -n "$tracktotal" ]; then
+        echo "$tracktotal"
+    else
+        return 1
+    fi
 }
 
 music_find() {
