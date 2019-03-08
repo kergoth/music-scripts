@@ -122,7 +122,7 @@ for source_dir; do
                         if [ -z "$artist" ]; then
                             artist="[unknown]"
                         fi
-                        newfn="$(echo "$artist - $title.$ext" | tr ':/' '∶／' | sed -e 's/^\.//')"
+                        newfn="$(fn_sanitize "$artist - $title.$ext")"
                         if [ -e "$dest/$newfn" ]; then
                             echo >&2 "Error: $dest/$newfn already exists, can't link from $dir"
                             continue
