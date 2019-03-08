@@ -67,11 +67,25 @@ eval_common_metadata () {
 }
 
 get_new_filename () {
+    separate_disc_folders=0
+    OPTIND=0
+    while getopts d opt; do
+        case "$opt" in
+            d)
+                separate_disc_folders=1
+                ;;
+            *)
+                return 1
+                ;;
+        esac
+    done
+    shift $((OPTIND - 1))
+
     fn="$1"
     source_dir="$2"
     compilation=
     (
-        eval_common_metadata "$fn" || die 1 "Failed to eval metadata for $fn"
+        eval_common_metadata "$1" || die 1 "Failed to eval metadata for $fn"
 
         oldtracktotal="$tracktotal"
         track="$(get_tracknumber || :)"
@@ -98,8 +112,32 @@ get_new_filename () {
                 ;;
         esac
 
-        if [ -n "$tracknumber" ]; then
-            newfn="$tracknumber - "
+        if [ -n "$album" ]; then
+            albumdir="$album"
+        else
+            albumdir="[unknown]"
+        fi
+
+        fn_tracknumber="$tracknumber"
+        if [ "$disctotal" != 1 ] \
+            || ( [ -n "$discnumber" ] && [ "$discnumber" -gt 1 ] ); then
+            if [ $separate_disc_folders -eq 0 ]; then
+                if [ -n "$tracknumber" ]; then
+                    fn_tracknumber="$discnumber-$tracknumber"
+                else
+                    fn_tracknumber="$discnumber-0"
+                fi
+            else
+                if [ -n "$discsubtitle" ]; then
+                    albumdir="$albumdir Disc $discnumber: $discsubtitle"
+                else
+                    albumdir="$albumdir Disc $discnumber"
+                fi
+            fi
+        fi
+
+        if [ -n "$fn_tracknumber" ]; then
+            newfn="$fn_tracknumber - "
         else
             newfn=
         fi
@@ -110,10 +148,9 @@ get_new_filename () {
             newfn="$newfn$artist - "
             compilation=1
         fi
+
         newfn="$newfn$title.${fn##*.}"
-        if [ "$disctotal" != 1 ]; then
-            newfn="$discnumber-$newfn"
-        fi
+
         if [ -n "$compilation" ] && [ "$compilation" -eq 1 ]; then
             artistdir=Compilations
         elif [ -n "$album_artist" ]; then
@@ -122,11 +159,6 @@ get_new_filename () {
             artistdir="$artist"
         else
             artistdir="[unknown]"
-        fi
-        if [ -n "$album" ]; then
-            albumdir="$album"
-        else
-            albumdir="[unknown]"
         fi
         artistdir="$(fn_sanitize "$artistdir")"
         albumdir="$(fn_sanitize "$albumdir" | sed -e 's/^The \(.*\)/\1, The/')"

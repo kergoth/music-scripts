@@ -19,10 +19,17 @@ PATH="$(cd "$(dirname "$0")" && pwd):$PATH"
 
 set -e
 
-usage () {
-    echo >&2 "${0##*/} [-n] SOURCE_DIR [SOURCE_DIR..]"
+usage() {
+    cat >&2 <<END
+${0##*/} [options] SOURCE_DIR [SOURCE_DIR..]
+
+Options:
+    -n    Dry run
+    -d    Separate discs into their own folders
+END
     exit 2
 }
+
 
 alias link='ln -fv'
 
@@ -31,10 +38,14 @@ if [ $# -eq 0 ]; then
 fi
 
 dry_run=0
-while getopts nh opt; do
+separate_discs=0
+while getopts ndh opt; do
     case "$opt" in
         n)
             dry_run=1
+            ;;
+        d)
+            separate_discs=1
             ;;
         \? | h)
             usage
@@ -59,7 +70,7 @@ for source_dir; do
     source_dir="${source_dir%/}"
     music_find "$source_dir" >"$audiofiles"
     while read -r fn; do
-        newfn="$(get_new_filename "$fn" "$source_dir")"
+        newfn="$(get_new_filename ${separate_discs+-d} "$fn" "$source_dir")"
         if [ "$fn" != "$newfn" ] && ! [ -e "$newfn" ]; then
             newfndir="$(dirname "$newfn")"
             if [ $dry_run -eq 0 ]; then
