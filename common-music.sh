@@ -15,7 +15,9 @@ die() {
 }
 
 fn_sanitize() {
-    echo "$@" | tr -d '™ ' | sed -e 's/^\.//; s/ :/:/g; s/:$//' | unidecode | tr ':/' '∶／'
+    sanitize_fn="$1"
+    shift
+    echo "$sanitize_fn" | tr -d '™ ' | sed -e 's/^\.//; s/ :/:/g; $*' | unidecode | tr ':/' '∶／'
 }
 
 get_metadata() {
@@ -197,9 +199,9 @@ get_new_filename() {
         artistdir="[unknown]"
     fi
     artistdir="$(fn_sanitize "$artistdir")"
-    albumdir="$(fn_sanitize "$albumdir" | sed -e 's/^The \(.*\)/\1, The/')"
+    albumdir="$(fn_sanitize "$albumdir" "s/:$//" | sed -e 's/^The \(.*\)/\1, The/')"
     destdir="$artistdir/$albumdir"
-    newfn="$(fn_sanitize "$newfn")"
+    newfn="$(fn_sanitize "$newfn" "s/:$//")"
     destfn="$source_dir/$destdir/$newfn"
     echo "$destfn"
 }
