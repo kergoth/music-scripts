@@ -93,8 +93,10 @@ eval_metadata() {
     # get_metadata "$@" | while read -r line; do
     #     ( eval "$line" ) >/dev/null 2>&1 || die 1 'Unable to eval `%s`' "$line"
     # done
-    eval "$(get_metadata "$@")"
-    if [ -z "$title" ]; then
+    fn="$1"
+    shift
+    eval "$(get_metadata "$fn" "$@")"
+    if [ -z "$title" ] && [ -z "$track" ] && [ -z "$tracknumber" ]; then
         eval "$(get_metadata_exif "$@")"
     fi
 }
@@ -121,11 +123,6 @@ get_new_filename() {
     source_dir="$2"
     compilation=
     (
-        if [ -z "$title" ]; then
-            echo >&2 "Error: no title for $fn"
-            return 1
-        fi
-
         oldtracktotal="$tracktotal"
         track="$(get_tracknumber || :)"
         case "$track" in
@@ -189,6 +186,14 @@ get_new_filename() {
             || ([ -n "$album_artist" ] && echo "$album_artist" | grep -qi '^various'); then
             newfn="$newfn$artist - "
             compilation=1
+        fi
+
+        if [ -z "$title" ]; then
+            if [ -n "$tracknumber" ]; then
+                title="Track $tracknumber"
+            else
+                title=Unknown
+            fi
         fi
 
         newfn="$newfn$title.${fn##*.}"
