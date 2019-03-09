@@ -78,7 +78,7 @@ progressbar() {
     else
         barch=$(($1*barlen/$2))
         barsp=$((barlen-barch))
-        printf "\r${3:+$3 }[%.${barch}s%.${barsp}s] ${4:+ $4}$barspaces\r" "$barchars" "$barspaces"
+        printf "\r%s[%.${barch}s%.${barsp}s]%s$barspaces\r" "$barchars" "$barspaces" "${3:+$3 }" "${4:+ $4}"
     fi
 }
 
@@ -94,7 +94,7 @@ for source_dir; do
     progressbar -1 "$filecount" "${source_dir##*/}" "$curcount/$filecount    "
     while read -r fn; do
         curcount=$((curcount + 1))
-        progressbar $curcount "$filecount" "${source_dir##*/}" "$curcount/$filecount    "
+        progressbar "$curcount" "$filecount" "${source_dir##*/}" "$curcount/$filecount    "
         eval_common_metadata "$fn"
         newfn="$(get_new_filename ${separate_discs+-d} "$fn" "$source_dir")"
         if [ $(echo "$newfn" | wc -l) -ne 1 ]; then
