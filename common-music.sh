@@ -121,7 +121,6 @@ get_new_filename() {
 
     fn="$1"
     source_dir="$2"
-    compilation=
     (
         oldtracktotal="$tracktotal"
         track="$(get_tracknumber || :)"
