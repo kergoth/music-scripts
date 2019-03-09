@@ -13,7 +13,6 @@ case "$BASH_VERSION" in
         trap 'rm -f $cleanfiles' EXIT
         ;;
 esac
-# trap 'rm -f $cleanfiles' EXIT
 
 PATH="$(cd "$(dirname "$0")" && pwd):$PATH"
 
