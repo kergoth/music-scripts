@@ -112,6 +112,9 @@ for library_dir; do
     curdir=1
     totaldir=$(for dir in "$library_dir"/*/*; do echo; done | wc -l | xargs)
     for dir in "$library_dir"/*/*/; do
+        if [ $verbose -eq 0 ]; then
+            clearbar
+        fi
         progressbar "$curdir" "$totaldir" "${library_dir##*/}" "$curdir/$totaldir"
         curdir=$((curdir + 1))
         if [ ! -e "$dir" ]; then
