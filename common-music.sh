@@ -390,7 +390,7 @@ preparebar() {
 # $2 - bar char
     barlen=$1
     barspaces=$(printf "%*s" "$1")
-    barchars=$(printf "%*s" "$1" | tr ' ' "${2:-▇}")
+    barchars=$(printf "%*s" "$1" | tr ' ' "${2:-#}")
 }
 
 clearlen="$(tput cols)"
