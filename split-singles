@@ -1,6 +1,23 @@
 #!/bin/bash
 
 . "$(dirname "$0")/common-music.sh"
+. "$(dirname "$0")/trap.sh"
+
+case "$BASH_VERSION" in
+    '')
+        trap 'rm -f $cleanfiles; on_exit' EXIT
+        ;;
+    *)
+        trap 'rm -f $cleanfiles' EXIT
+        ;;
+esac
+audiofiles="$(mktemp -t "${0##*/}.XXXXXX")" || exit 1
+cleanfiles="$audiofiles"
+trap 'rm -f "$audiofiles"' INT TERM
+
+set -e
+
+PATH="$(cd "$(dirname "$0")" && pwd):$PATH"
 
 investigate_threshold=1
 destdir=.
@@ -78,6 +95,7 @@ else
     }
 fi
 
+
 for library_dir; do
     library_dir="$(abspath "$library_dir")"
     if [ "$library_dir" = "$(pwd -P)" ]; then
@@ -90,11 +108,12 @@ for library_dir; do
         fi
         dir="${dir%/}"
         base="${dir##*/}"
-        count="$(music_find "$dir" | wc -l)"
+        music_find "$dir" >"$audiofiles"
+        count="$(wc -l <"$audiofiles" | xargs)"
         if [ $count -lt 1 ]; then
             continue
         fi
-        first="$(music_find "$dir" | head -n 1)"
+        first="$(head -n 1 "$audiofiles")"
         eval_common_metadata "$first"
 
         if [ $separated_disc_folders -eq 1 ]; then
@@ -184,10 +203,9 @@ for library_dir; do
                     continue
                 fi
                 mkdir -p "$dest"
-                find "$dir/" -not -name ._\* \( -iname \*.flac -o -iname \*mp3 -o -iname \*.m4a -o -iname \*.ogg \) \
-                    | while read -r fn; do
-                        link "$fn" "$dest/"
-                    done
+                while read -r fn; do
+                    link "$fn" "$dest/"
+                done <"$audiofiles"
             else
                 dest_parent="$(dirname "$dest")"
                 mkdir -p "$dest_parent"
