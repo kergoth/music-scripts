@@ -30,20 +30,10 @@ get_metadata() {
     esac
 
     pat="$(echo "$@" | sed -e 's/  */ /g')"
-    ffprobe -loglevel quiet -of compact=p=0 -show_entries format_tags "$fn" \
-        | tr '|' '\n' \
-        | sed -e 's/tag://' \
-        | grep -v '\\r' \
+    ffprobe -v quiet -of flat=s=_ -show_entries format_tags "$fn" \
+        | cut -d_ -f3- \
         | while IFS="=" read -r key value; do
-            if [ -z "$key" ]; then
-                continue
-            fi
-            case "$key" in
-                *\ *)
-                    key="$(echo "$key" | tr " " _)"
-                    ;;
-            esac
-            key="$(printf '%s\n' "$key" | tr ".:/-#=\`" "_______" | tr "[:upper:]" "[:lower:]" | tr -d '\')"
+            key="$(printf '%s\n' "$key" | tr "[:upper:]" "[:lower:]")"
             if [ -n "$pat" ]; then
                 case " $pat " in
                     *\ $key\ *) ;;
@@ -53,8 +43,7 @@ get_metadata() {
                         ;;
                 esac
             fi
-            value="$(printf '%s\n' "$value" | sed -e 's/"/\\"/g; s/\\$//; s/`/\\`/g')"
-            printf '%s="%s"\n' "$key" "$value"
+            printf '%s=%s\n' "$key" "$value"
         done
 }
 
