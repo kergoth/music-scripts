@@ -256,7 +256,7 @@ get_discnumber() {
 
 # We need to get the total tracks for all discs to get a true total
 get_album_track_total_indiv_discs() {
-    track="$(get_tracknumber)"
+    track="$(get_tracknumber || :)"
     case "$track" in
         */*)
             tracktotal="${track##*/}"
@@ -293,7 +293,7 @@ get_album_track_total() {
             while read -r fn; do
                 eval_common_metadata "$fn"
 
-                track="$(get_tracknumber)"
+                track="$(get_tracknumber || :)"
                 case "$track" in
                     */*)
                         tracknumber="${track%/*}"
