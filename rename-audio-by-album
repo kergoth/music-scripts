@@ -106,7 +106,7 @@ for source_dir; do
             continue
         fi
         if [ "$fn" != "$newfn" ]; then
-            if [ -e "$newfn" ]; then
+            if [ -e "$newfn" ] && ! [ "$fn" -ef "$newfn" ]; then
                 echo >&2 "Error: $newfn already exists, cannot move $fn"
                 continue
             fi
