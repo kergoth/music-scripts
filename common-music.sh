@@ -121,98 +121,95 @@ get_new_filename() {
 
     fn="$1"
     source_dir="$2"
-    (
-        oldtracktotal="$tracktotal"
-        track="$(get_tracknumber || :)"
-        case "$track" in
-            */*)
-                tracknumber="${track%/*}"
-                tracktotal="${track##*/}"
-                ;;
-            *)
-                tracknumber="$track"
-                tracktotal=
-                ;;
-        esac
+    track="$(get_tracknumber || :)"
+    case "$track" in
+        */*)
+            tracknumber="${track%/*}"
+            tracktotal="${track##*/}"
+            ;;
+        *)
+            tracknumber="$track"
+            tracktotal=
+            ;;
+    esac
 
-        disc="$(get_discnumber)" || :
-        case "$disc" in
-            */*)
-                discnumber="${disc%/*}"
-                disctotal="${disc##*/}"
-                ;;
-            *)
-                discnumber="$disc"
-                disctotal=1
-                ;;
-        esac
+    disc="$(get_discnumber)" || :
+    case "$disc" in
+        */*)
+            discnumber="${disc%/*}"
+            disctotal="${disc##*/}"
+            ;;
+        *)
+            discnumber="$disc"
+            disctotal=1
+            ;;
+    esac
 
-        if [ -n "$album" ]; then
-            albumdir="$album"
-        else
-            albumdir="[unknown]"
+    if [ -n "$album" ]; then
+        albumdir="$album"
+    else
+        albumdir="[unknown]"
+    fi
+
+    fn_tracknumber="$tracknumber"
+    if [ "$disctotal" != 1 ] \
+        || ([ -n "$discnumber" ] && [ "$discnumber" -gt 1 ]); then
+        if [ -z "$discsubtitle" ]; then
+            discsubtitle="$setsubtitle"
         fi
-
-        fn_tracknumber="$tracknumber"
-        if [ "$disctotal" != 1 ] \
-            || ([ -n "$discnumber" ] && [ "$discnumber" -gt 1 ]); then
-            if [ -z "$discsubtitle" ]; then
-                discsubtitle="$setsubtitle"
-            fi
-            if [ $separate_disc_folders -eq 0 ]; then
-                if [ -n "$tracknumber" ]; then
-                    fn_tracknumber="$discnumber-$tracknumber"
-                else
-                    fn_tracknumber="$discnumber-0"
-                fi
-            else
-                if [ -n "$discsubtitle" ]; then
-                    albumdir="$albumdir Disc $discnumber: $discsubtitle"
-                else
-                    albumdir="$albumdir Disc $discnumber"
-                fi
-            fi
-        fi
-
-        if [ -n "$fn_tracknumber" ]; then
-            newfn="$fn_tracknumber - "
-        else
-            newfn=
-        fi
-
-        if echo "$releasetype" | tr '/,' '  ' | grep -qwi compilation \
-            || ([ -n "$compilation" ] && [ "$compilation" = 1 ]) \
-            || ([ -n "$album_artist" ] && echo "$album_artist" | grep -qi '^various'); then
-            newfn="$newfn$artist - "
-            compilation=1
-        fi
-
-        if [ -z "$title" ]; then
+        if [ $separate_disc_folders -eq 0 ]; then
             if [ -n "$tracknumber" ]; then
-                title="Track $tracknumber"
+                fn_tracknumber="$discnumber-$tracknumber"
             else
-                title=Unknown
+                fn_tracknumber="$discnumber-0"
+            fi
+        else
+            if [ -n "$discsubtitle" ]; then
+                albumdir="$albumdir Disc $discnumber: $discsubtitle"
+            else
+                albumdir="$albumdir Disc $discnumber"
             fi
         fi
+    fi
 
-        newfn="$newfn$title.${fn##*.}"
+    if [ -n "$fn_tracknumber" ]; then
+        newfn="$fn_tracknumber - "
+    else
+        newfn=
+    fi
 
-        if [ -n "$compilation" ] && [ "$compilation" -eq 1 ]; then
-            artistdir=Compilations
-        elif [ -n "$album_artist" ]; then
-            artistdir="$album_artist"
-        elif [ -n "$artist" ]; then
-            artistdir="$artist"
+    if echo "$releasetype" | tr '/,' '  ' | grep -qwi compilation \
+        || ([ -n "$compilation" ] && [ "$compilation" = 1 ]) \
+        || ([ -n "$album_artist" ] && echo "$album_artist" | grep -qi '^various'); then
+        newfn="$newfn$artist - "
+        compilation=1
+    fi
+
+    if [ -z "$title" ]; then
+        if [ -n "$tracknumber" ]; then
+            title="Track $tracknumber"
         else
-            artistdir="[unknown]"
+            title=Unknown
         fi
-        artistdir="$(fn_sanitize "$artistdir")"
-        albumdir="$(fn_sanitize "$albumdir" | sed -e 's/^The \(.*\)/\1, The/')"
-        destdir="$artistdir/$albumdir"
-        newfn="$(fn_sanitize "$newfn")"
-        destfn="$source_dir/$destdir/$newfn"
-        echo "$destfn"
-    )
+    fi
+
+    newfn="$newfn$title.${fn##*.}"
+
+    if [ -n "$compilation" ] && [ "$compilation" -eq 1 ]; then
+        artistdir=Compilations
+    elif [ -n "$album_artist" ]; then
+        artistdir="$album_artist"
+    elif [ -n "$artist" ]; then
+        artistdir="$artist"
+    else
+        artistdir="[unknown]"
+    fi
+    artistdir="$(fn_sanitize "$artistdir")"
+    albumdir="$(fn_sanitize "$albumdir" | sed -e 's/^The \(.*\)/\1, The/')"
+    destdir="$artistdir/$albumdir"
+    newfn="$(fn_sanitize "$newfn")"
+    destfn="$source_dir/$destdir/$newfn"
+    echo "$destfn"
 }
 
 get_tracknumber() {
