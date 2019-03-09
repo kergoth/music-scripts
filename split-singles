@@ -46,6 +46,7 @@ usage() {
 ${0##*/} [options] LIBRARY_DIR [LIBRARY_DIR..]
 
 Options:
+    -v    Verbose output
     -i    Link tracks individually rather than album folders
     -H    Hard link tracks rather than soft link (only useful with -i)
     -d    Assume multi-disc albums are separated one disc per folder
@@ -53,11 +54,15 @@ END
     exit 2
 }
 
+verbose=0
 individual=0
 hard_link_individual=0
 separated_disc_folders=0
 while getopts iHdh opt; do
     case "$opt" in
+        v)
+            verbose=1
+            ;;
         i)
             individual=1
             ;;
@@ -165,8 +170,10 @@ for library_dir; do
         fi
 
         rel="$(relpath "$dir" "$library_dir")"
-        clearbar
-        echo "$rel: $count / $total -> $d"
+        if [ $verbose -eq 1 ]; then
+            clearbar
+            echo "$rel: $count / $total -> $d"
+        fi
         if [ "$d" = "$singletracksdir" ]; then
             dest="$d"
             mkdir -p "$dest"
