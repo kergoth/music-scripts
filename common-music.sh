@@ -61,6 +61,9 @@ get_metadata_exif() {
                 *\ *)
                     key="$(echo "$key" | tr -d " ")"
                     ;;
+                Albumartist)
+                    key="Album_Artist"
+                    ;;
             esac
             key="$(printf '%s\n' "$key" | tr ".:/-#=\`" "_______" | tr "[:upper:]" "[:lower:]" | tr -d '\')"
             if [ -n "$pat" ]; then
