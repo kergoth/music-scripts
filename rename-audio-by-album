@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # TODO: add option to separate discs to separate folders, and remember to
 # include disc subtitle if set
 
