@@ -106,7 +106,11 @@ for source_dir; do
             echo >&2 "Error: unable to determine new filename for $fn, skipping"
             continue
         fi
-        if [ "$fn" != "$newfn" ] && ! [ -e "$newfn" ]; then
+        if [ "$fn" != "$newfn" ]; then
+            if [ -e "$newfn" ]; then
+                echo >&2 "Error: $newfn already exists, cannot move $fn"
+                continue
+            fi
             newfndir="$(dirname "$newfn")"
             if [ $dry_run -eq 0 ]; then
                 mkdir -p "$newfndir"
