@@ -17,7 +17,7 @@ die() {
 fn_sanitize() {
     sanitize_fn="$1"
     shift
-    echo "$sanitize_fn" | tr -d '™ ' | sed -e 's/^\.//; s/ :/:/g; $*' | unidecode | tr ':/' '∶／'
+    echo "$sanitize_fn" | tr -d '™ ' | sed -e "s/^\\.//; s/ :/:/g; $*" | unidecode | tr ':/' '∶／'
 }
 
 get_metadata() {
