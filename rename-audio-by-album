@@ -62,7 +62,7 @@ otherfiles="$(mktemp -t "${0##*/}.XXXXXX")" || exit 1
 cleanfiles="$audiofiles"
 trap 'rm -f "$audiofiles"' INT TERM
 
-preparebar 40 "▇"
+preparebar 40
 for source_dir; do
     if [ ! -e "$source_dir" ]; then
         continue
