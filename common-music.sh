@@ -384,3 +384,30 @@ get_genre() {
     fi
     echo "$genre"
 }
+
+preparebar() {
+# $1 - bar length
+# $2 - bar char
+    barlen=$1
+    barspaces=$(printf "%*s" "$1")
+    barchars=$(printf "%*s" "$1" | tr ' ' "${2:-▇}")
+}
+
+clearlen="$(tput cols)"
+clearspaces=$(printf "%*s" "$clearlen")
+clearbar() {
+    printf "\r$clearspaces\r"
+}
+
+progressbar() {
+# $1 - number (-1 for clearing the bar)
+# $2 - max number
+    if [ $1 -eq -1 ]; then
+        printf "\r  $barspaces\r"
+    else
+        barch=$(($1*barlen/$2))
+        barsp=$((barlen-barch))
+        printf "\r%s[%.${barch}s%.${barsp}s]%s\r" "${3:+$3 }" "$barchars" "$barspaces" "${4:+ $4}"
+    fi
+}
+

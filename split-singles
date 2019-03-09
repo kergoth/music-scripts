@@ -96,13 +96,19 @@ else
 fi
 
 
+preparebar 40
+totaldir=$#
 for library_dir; do
     library_dir="$(abspath "$library_dir")"
     if [ "$library_dir" = "$(pwd -P)" ]; then
         # Don't recurse into ourselves
         continue
     fi
+    curdir=1
+    totaldir=$(for dir in "$library_dir"/*/*; do echo; done | wc -l | xargs)
     for dir in "$library_dir"/*/*/; do
+        progressbar "$curdir" "$totaldir" "${library_dir##*/}" "$curdir/$totaldir"
+        curdir=$((curdir + 1))
         if [ ! -e "$dir" ]; then
             continue
         fi
@@ -159,6 +165,7 @@ for library_dir; do
         fi
 
         rel="$(relpath "$dir" "$library_dir")"
+        clearbar
         echo "$rel: $count / $total -> $d"
         if [ "$d" = "$singletracksdir" ]; then
             dest="$d"
@@ -227,4 +234,5 @@ for library_dir; do
 
         fi
     done
+    echo
 done
