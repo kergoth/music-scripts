@@ -186,7 +186,7 @@ for library_dir; do
                 fi
             fi
 
-            if echo "$base" | grep -wi sampler; then
+            if echo "$base" | grep -qwi sampler; then
                 d="$samplersdir"
             fi
 
