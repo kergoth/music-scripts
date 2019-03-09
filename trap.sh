@@ -1,5 +1,11 @@
 on_error () {
     local ret=$?
+    if [ $ret -eq 130 ]; then
+        # No shell traceback for SIGINT
+        printf >&2 "Interrupted\n"
+        exit $ret
+    fi
+
     local i=0
     local argv_offset=0
     local FRAMES=${#BASH_SOURCE[@]}
