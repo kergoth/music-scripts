@@ -49,6 +49,7 @@ Options:
     -v    Verbose output
     -i    Link tracks individually rather than album folders
     -H    Hard link tracks rather than soft link (only useful with -i)
+    -m    Move/rename instead of linking
     -d    Assume multi-disc albums are separated one disc per folder
 END
     exit 2
@@ -57,8 +58,9 @@ END
 verbose=0
 individual=0
 hard_link_individual=0
+move=0
 separated_disc_folders=0
-while getopts iHdh opt; do
+while getopts iHmdh opt; do
     case "$opt" in
         v)
             verbose=1
@@ -68,6 +70,9 @@ while getopts iHdh opt; do
             ;;
         H)
             hard_link_individual=1
+            ;;
+        m)
+            move=1
             ;;
         d)
             separated_disc_folders=1
@@ -90,14 +95,20 @@ elif [ $individual -eq 0 ]; then
     echo >&2 "Warning: -H has no effect without -i"
 fi
 
-if which gln >/dev/null 2>&1; then
+if [ $move -eq 1 ]; then
     link () {
-        gln $linkargs "$@"
+        mv "$@"
     }
 else
-    link () {
-        ln $linkargs "$@"
-    }
+    if which gln >/dev/null 2>&1; then
+        link () {
+            gln $linkargs "$@"
+        }
+    else
+        link () {
+            ln $linkargs "$@"
+        }
+    fi
 fi
 
 
