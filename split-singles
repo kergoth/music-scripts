@@ -206,7 +206,7 @@ for library_dir; do
                 artist="[unknown]"
             fi
             newfirst="$(fn_sanitize "$artist - $title.$ext")"
-            if [ -e "$dest/$newfirst" ]; then
+            if [ -e "$destdir/$dest/$newfirst" ]; then
                 echo >&2 "Error: $dest/$newfirst already exists, can't link from $dir"
                 continue
             fi
