@@ -395,8 +395,12 @@ preparebar() {
     barchars=$(printf "%*s" "$1" | tr ' ' "${2:-#}")
 }
 
-clearlen="$(tput cols)"
-clearspaces=$(printf "%*s" "$clearlen")
+setup_clearbar () {
+    clearlen="$(tput cols)"
+    clearspaces=$(printf "%*s" "$clearlen")
+}
+trap 'setup_clearbar' WINCH
+
 clearbar() {
     printf "\r$clearspaces\r"
 }
