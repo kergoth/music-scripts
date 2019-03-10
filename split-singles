@@ -61,7 +61,8 @@ individual=0
 hard_link_individual=0
 move=0
 separated_disc_folders=0
-while getopts o:viHmdh opt; do
+dry_run=0
+while getopts o:viHmdnh opt; do
     case "$opt" in
         o)
             destdir="$(abspath "$OPTARG")"
@@ -80,6 +81,9 @@ while getopts o:viHmdh opt; do
             ;;
         d)
             separated_disc_folders=1
+            ;;
+        n)
+            dry_run=1
             ;;
         \? | h)
             usage
@@ -194,7 +198,9 @@ for library_dir; do
         fi
         if [ "$d" = "$singletracksdir" ]; then
             dest="$d"
-            mkdir -p "$dest"
+            if [ $dry_run -eq 0 ]; then
+                mkdir -p "$dest"
+            fi
             ext="${first##*.}"
             if [ -z "$artist" ]; then
                 artist="[unknown]"
@@ -204,7 +210,9 @@ for library_dir; do
                 echo >&2 "Error: $dest/$newfirst already exists, can't link from $dir"
                 continue
             fi
-            link "$first" "$dest/$newfirst"
+            if [ $dry_run -eq 0 ]; then
+                link "$first" "$dest/$newfirst"
+            fi
         else
             dest=
             if [ -n "$hoisted_genres" ] || [ -n "$flattened_genres" ]; then
@@ -234,13 +242,19 @@ for library_dir; do
                     echo >&2 "Error: $dest already exists, can't link from $dir"
                     continue
                 fi
-                mkdir -p "$dest"
+                if [ $dry_run -eq 0 ]; then
+                    mkdir -p "$dest"
+                fi
                 while read -r fn; do
-                    link "$fn" "$dest/"
+                    if [ $dry_run -eq 0 ]; then
+                        link "$fn" "$dest/"
+                    fi
                 done <"$audiofiles"
             else
                 dest_parent="$(dirname "$dest")"
-                mkdir -p "$dest_parent"
+                if [ $dry_run -eq 0 ]; then
+                    mkdir -p "$dest_parent"
+                fi
                 if [ -h "$dest" ]; then
                     if [ -d "$dest" ]; then
                         olddest="$(cd "$dest" && pwd -P)"
@@ -253,8 +267,10 @@ for library_dir; do
                         continue
                     fi
                 fi
-                rm -f "$dest"
-                link "$dir" "$dest"
+                if [ $dry_run -eq 0 ]; then
+                    rm -f "$dest"
+                    link "$dir" "$dest"
+                fi
             fi
 
         fi
