@@ -20,7 +20,6 @@ set -e
 PATH="$(cd "$(dirname "$0")" && pwd):$PATH"
 
 investigate_threshold=1
-destdir=.
 prefix=
 albumsdir=${prefix}Albums
 extrasdir="${prefix}Albums With Extra Tracks"
@@ -46,6 +45,7 @@ usage() {
 ${0##*/} [options] LIBRARY_DIR [LIBRARY_DIR..]
 
 Options:
+    -o DESTDIR    Link/move files to DESTDIR (default: \$PWD)
     -v    Verbose output
     -i    Link tracks individually rather than album folders
     -H    Hard link tracks rather than soft link (only useful with -i)
@@ -55,13 +55,17 @@ END
     exit 2
 }
 
+destdir=.
 verbose=0
 individual=0
 hard_link_individual=0
 move=0
 separated_disc_folders=0
-while getopts viHmdh opt; do
+while getopts o:viHmdh opt; do
     case "$opt" in
+        o)
+            destdir="$(abspath "$OPTARG")"
+            ;;
         v)
             verbose=1
             ;;
