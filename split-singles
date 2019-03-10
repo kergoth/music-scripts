@@ -1,5 +1,28 @@
 #!/bin/bash
 
+check_dest () {
+    check_src="$(abspath "$1")"
+    check_destpath="$(abspath "$2")"
+    if [ "$move" -eq 1 ]; then
+        if [ -h "$check_destpath" ] || [ -e "$check_destpath" ]; then
+            echo >&2 "Error: $2 already exists, cannot move $1 there"
+            return 1
+        fi
+    else
+        check_dest_parent="$(dirname "$dest")"
+        if [ -h "$check_destpath" ]; then
+            oldcheck_destpath="$(cd "$check_dest_parent" && abspath "$(readlink "$check_destpath")")" || return 1
+            if [ "$oldcheck_destpath" != "$check_src" ]; then
+                echo >&2 "Error: $check_destpath exists but points to $oldcheck_destpath, not $check_src"
+                return 1
+            fi
+        elif [ -e "$check_destpath" ]; then
+            echo >&2 "Error: $check_destpath already exists, cannot update to $check_src"
+        fi
+    fi
+    return 0
+}
+
 . "$(dirname "$0")/common-music.sh"
 . "$(dirname "$0")/trap.sh"
 
@@ -51,6 +74,9 @@ Options:
     -H    Hard link tracks rather than soft link (only useful with -i)
     -m    Move/rename instead of linking
     -d    Assume multi-disc albums are separated one disc per folder
+    -n    Dry-run. Pretend to work, but don't make the changes
+    -S    Disable flattening of single tracks
+    -D    Disable all separation (useful for dupe checking)
 END
     exit 2
 }
@@ -62,7 +88,9 @@ hard_link_individual=0
 move=0
 separated_disc_folders=0
 dry_run=0
-while getopts o:viHmdnh opt; do
+flatten_single_tracks=1
+separate=1
+while getopts o:viHmdnSDh opt; do
     case "$opt" in
         o)
             destdir="$(abspath "$OPTARG")"
@@ -85,6 +113,13 @@ while getopts o:viHmdnh opt; do
         n)
             dry_run=1
             ;;
+        S)
+            flatten_single_tracks=0
+            ;;
+        D)
+            separate=0
+            flatten_single_tracks=0
+            ;;
         \? | h)
             usage
             ;;
@@ -105,20 +140,29 @@ fi
 
 if [ $move -eq 1 ]; then
     link () {
+        if [ -h "$dest" ] || [ -e "$dest" ]; then
+            echo >&2 "Error: $2 already exists, cannot move $1 there"
+            return 1
+        fi
         mv "$@"
     }
 else
     if which gln >/dev/null 2>&1; then
         link () {
+            if [ -h "$2" ]; then
+                rm -f "$2"
+            fi
             gln $linkargs "$@"
         }
     else
         link () {
+            if [ -h "$2" ]; then
+                rm -f "$2"
+            fi
             ln $linkargs "$@"
         }
     fi
 fi
-
 
 preparebar 40
 totaldir=$#
@@ -143,7 +187,7 @@ for library_dir; do
         base="${dir##*/}"
         music_find "$dir" >"$audiofiles"
         count="$(wc -l <"$audiofiles" | xargs)"
-        if [ $count -lt 1 ]; then
+        if [ "$count" -lt 1 ]; then
             continue
         fi
         first="$(head -n 1 "$audiofiles")"
@@ -157,30 +201,30 @@ for library_dir; do
         genre="$(get_genre "$first" "$soundtrack_blacklist")"
 
         if [ -z "$total" ]; then
-            if [ $count -gt 1 ]; then
+            if [ "$count" -gt 1 ]; then
                 d="$albumsdir"
             else
                 d="$singletracksdir"
             fi
-        elif [ $count -eq $total ]; then
+        elif [ "$count" -eq "$total" ]; then
             if echo "$releasetype" | tr '/,' '  ' | grep -qwi single \
-                || [ $total -eq 1 ] || echo "$base" | grep -q Single; then
+                || [ "$total" -eq 1 ] || echo "$base" | grep -q Single; then
                 d="$singlesdir"
             else
                 d="$albumsdir"
             fi
-        elif [ $count -gt $total ]; then
+        elif [ "$count" -gt "$total" ]; then
             # The most common case is multiple discs
             # find "$dir/" -not -name ._\* \( -iname \*.flac -o -iname \*mp3 -o -iname \*.m4a -o -iname \*.ogg \)
             d="$extrasdir"
-        elif [ $total -eq 1 ]; then
+        elif [ "$total" -eq 1 ]; then
             # Shouldn't be possible to get here
             echo >&2 "Error: total is 1, but count is less than 1"
             exit 1
             d="$singletracksdir"
         else
-            if [ $count -gt "$investigate_threshold" ]; then
-                if [ $count -eq $((total - 1)) ] && echo "$base" | grep -qEx "$incomplete_blacklist"; then
+            if [ "$count" -gt "$investigate_threshold" ]; then
+                if [ "$count" -eq $((total - 1)) ] && echo "$base" | grep -qEx "$incomplete_blacklist"; then
                     d="$albumsdir"
                 else
                     # Possibly screwed up, or an incomplete album
@@ -197,11 +241,12 @@ for library_dir; do
             echo "$rel: $count / $total -> $d"
         fi
         if [ "$d" = "$singletracksdir" ] \
+            && [ $flatten_single_tracks -eq 1 ] \
             && ! ( \
                 [ -n "$hoisted_genres" ] \
                     && echo "$genre" | grep -Eqx "$hoisted_genres"
             ); then
-            dest="$d"
+            dest="$destdir/$d"
             if [ $dry_run -eq 0 ]; then
                 mkdir -p "$dest"
             fi
@@ -210,11 +255,8 @@ for library_dir; do
                 artist="[unknown]"
             fi
             newfirst="$(fn_sanitize "$artist - $title.$ext")"
-            if [ -e "$destdir/$dest/$newfirst" ]; then
-                echo >&2 "Error: $dest/$newfirst already exists, can't link from $dir"
-                continue
-            fi
             if [ $dry_run -eq 0 ]; then
+                check_dest "$first" "$dest/$newfirst"
                 link "$first" "$dest/$newfirst"
             fi
         else
@@ -222,6 +264,7 @@ for library_dir; do
             if [ -n "$hoisted_genres" ] || [ -n "$flattened_genres" ]; then
                 if [ -n "$hoisted_genres" ] \
                     && echo "$genre" | grep -Eqx "$hoisted_genres"; then
+                    # shellcheck disable=SC2059
                     d="$(printf "$hoistedgenresdir" "$genre")"
                 fi
                 if [ -n "$flattened_genres" ] \
@@ -234,6 +277,10 @@ for library_dir; do
                 d="$samplersdir"
             fi
 
+            if [ $separate -eq 0 ]; then
+                d=.
+            fi
+
             if echo "$d" | grep -Eqx "$flattened_dirs"; then
                 dest="$d/$base"
             elif [ -z "$dest" ]; then
@@ -242,8 +289,12 @@ for library_dir; do
             dest="$destdir/$dest"
 
             if [ $individual -eq 1 ]; then
-                if [ -d "$dest" ]; then
+                if [ -d "$dest" ] || [ -h "$dest" ]; then
                     echo >&2 "Error: $dest already exists, can't link from $dir"
+                    existing_fn="$(music_find "$dest" | head -n 1)"
+                    if [ -n "$existing_fn" ]; then
+                        echo >&2 "One file from the existing directory: $existing_fn"
+                    fi
                     continue
                 fi
                 if [ $dry_run -eq 0 ]; then
@@ -259,20 +310,8 @@ for library_dir; do
                 if [ $dry_run -eq 0 ]; then
                     mkdir -p "$dest_parent"
                 fi
-                if [ -h "$dest" ]; then
-                    if [ -d "$dest" ]; then
-                        olddest="$(cd "$dest" && pwd -P)"
-                    else
-                        olddest="$(cd "$dest_parent" && abspath "$(readlink "$base")")"
-                    fi
-                    absdir="$(cd "$dir" && pwd -P)"
-                    if [ "$olddest" != "$absdir" ]; then
-                        echo >&2 "Error: $dest exists but points to $olddest, not $absdir"
-                        continue
-                    fi
-                fi
                 if [ $dry_run -eq 0 ]; then
-                    rm -f "$dest"
+                    check_dest "$dir" "$dest"
                     link "$dir" "$dest"
                 fi
             fi
