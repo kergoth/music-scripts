@@ -196,7 +196,11 @@ for library_dir; do
             clearbar
             echo "$rel: $count / $total -> $d"
         fi
-        if [ "$d" = "$singletracksdir" ]; then
+        if [ "$d" = "$singletracksdir" ] \
+            && ! ( \
+                [ -n "$hoisted_genres" ] \
+                    && echo "$genre" | grep -Eqx "$hoisted_genres"
+            ); then
             dest="$d"
             if [ $dry_run -eq 0 ]; then
                 mkdir -p "$dest"
