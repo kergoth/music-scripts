@@ -1,0 +1,6 @@
+#!/bin/sh
+
+for fn; do
+    ffprobe -v quiet -of flat=s=_ -show_entries format_tags "$fn" \
+        | cut -d_ -f3-
+done

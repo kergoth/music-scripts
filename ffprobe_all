@@ -1,0 +1,4 @@
+#!/bin/sh
+for track; do
+    ffprobe "$track" || exit 1
+done
