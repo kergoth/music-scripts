@@ -60,7 +60,7 @@ individual=0
 hard_link_individual=0
 move=0
 separated_disc_folders=0
-while getopts iHmdh opt; do
+while getopts viHmdh opt; do
     case "$opt" in
         v)
             verbose=1
