@@ -91,13 +91,10 @@ for source_dir; do
                 continue
             fi
             newfndir="$(dirname "$newfn")"
-            if [ $dry_run -eq 0 ]; then
-                mkdir -p "$newfndir"
-            fi
-
             if [ $dry_run -eq 1 ]; then
                 echo "$fn -> $newfn"
             else
+                mkdir -p "$newfndir"
                 mv -v "$fn" "$newfn"
             fi
 
@@ -107,7 +104,7 @@ for source_dir; do
                 nonmusic_find "$oldfndir" \
                     | while read -r efn; do
                         newefn="$newfndir/${efn##*/}"
-                        if ! grep -qx "$efn" "$otherfiles" && ! [ -e "$newefn" ]; then
+                        if ! grep -qFx "$efn" "$otherfiles" && ! [ -e "$newefn" ]; then
                             echo "$efn" >>"$otherfiles"
                             if [ $dry_run -eq 1 ]; then
                                 echo "$efn -> $newefn"
@@ -119,6 +116,8 @@ for source_dir; do
             fi
         fi
     done <"$audiofiles"
-    remove-empty-dirs "$source_dir" >/dev/null 2>&1
+    if [ $dry_run -eq 1 ]; then
+        remove-empty-dirs "$source_dir" >/dev/null 2>&1
+    fi
     echo
 done
