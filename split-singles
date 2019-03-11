@@ -44,7 +44,6 @@ set -e
 
 PATH="$(cd "$(dirname "$0")" && pwd):$PATH"
 
-investigate_threshold=1
 prefix=
 albumsdir=${prefix}Albums
 extrasdir="${prefix}Albums With Extra Tracks"
@@ -225,7 +224,7 @@ for library_dir; do
             exit 1
             d="$singletracksdir"
         else
-            if [ "$count" -gt "$investigate_threshold" ]; then
+            if [ "$count" -gt "1" ]; then
                 if [ "$count" -eq $((total - 1)) ] && echo "$base" | grep -qEx "$incomplete_blacklist"; then
                     d="$albumsdir"
                 else
