@@ -28,17 +28,17 @@ check_dest() {
 . "$(dirname "$0")/common-music.sh"
 . "$(dirname "$0")/trap.sh"
 
+tmpdir="$(mktemp -d -t "${0##*/}.XXXXXX")" || exit 1
 case "$BASH_VERSION" in
     '')
-        trap 'rm -f $cleanfiles; on_exit' EXIT
+        trap 'rm -rf "$tmpdir"; on_exit' EXIT
         ;;
     *)
-        trap 'rm -f $cleanfiles' EXIT
+        trap 'rm -rf "$tmpdir"' EXIT
         ;;
 esac
-audiofiles="$(mktemp -t "${0##*/}.XXXXXX")" || exit 1
-cleanfiles="$audiofiles"
-trap 'rm -f "$audiofiles"' INT TERM
+trap 'rm -rf "$tmpdir"' INT TERM
+audiofiles="$tmpdir/audiofiles"
 
 set -e
 
@@ -140,7 +140,7 @@ elif [ $individual -eq 0 ]; then
 fi
 
 if [ $move -eq 1 ]; then
-    link () {
+    link() {
         if [ -h "$dest" ] || [ -e "$dest" ]; then
             echo >&2 "Error: $2 already exists, cannot move $1 there"
             return 1
@@ -176,8 +176,12 @@ for library_dir; do
         continue
     fi
     curdir=1
-    totaldir=$(for dir in "$library_dir"/*/*; do echo; done | wc -l | xargs)
-    for dir in "$library_dir"/*/*/; do
+    music_find "$library_dir" \
+        | sed -e 's#\(.*\)/.*#\1#' \
+        | sort -uf >"$tmpdir/dirs"
+    totaldir=$(wc -l <"$tmpdir/dirs" | xargs)
+    clearbar
+    while read -r dir; do
         if [ $verbose -eq 0 ]; then
             clearbar
         fi
@@ -305,12 +309,11 @@ for library_dir; do
                     mkdir -p "$dest_parent"
                 fi
                 if [ $dry_run -eq 0 ]; then
-                    check_dest "$dir" "$dest"
-                    link "$dir" "$dest"
+                    link "$dir" "$dest" || continue
                 fi
             fi
 
         fi
-    done
+    done <"$tmpdir/dirs"
     echo
 done
