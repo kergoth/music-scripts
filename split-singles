@@ -1,6 +1,6 @@
 #!/bin/bash
 
-check_dest () {
+check_dest() {
     check_src="$(abspath "$1")"
     check_destpath="$(abspath "$2")"
     if [ "$move" -eq 1 ]; then
@@ -149,14 +149,16 @@ if [ $move -eq 1 ]; then
     }
 else
     if which gln >/dev/null 2>&1; then
-        link () {
+        link() {
+            check_dest "$@" || return $?
             if [ -h "$2" ]; then
                 rm -f "$2"
             fi
             gln $linkargs "$@"
         }
     else
-        link () {
+        link() {
+            check_dest "$@" || return $?
             if [ -h "$2" ]; then
                 rm -f "$2"
             fi
@@ -243,7 +245,7 @@ for library_dir; do
         fi
         if [ "$d" = "$singletracksdir" ] \
             && [ $flatten_single_tracks -eq 1 ] \
-            && ! ( \
+            && ! (
                 [ -n "$hoisted_genres" ] \
                     && echo "$genre" | grep -Eqx "$hoisted_genres"
             ); then
@@ -257,8 +259,7 @@ for library_dir; do
             fi
             newfirst="$(fn_sanitize "$artist - $title.$ext")"
             if [ $dry_run -eq 0 ]; then
-                check_dest "$first" "$dest/$newfirst"
-                link "$first" "$dest/$newfirst"
+                link "$first" "$dest/$newfirst" || continue
             fi
         else
             dest=
@@ -290,20 +291,12 @@ for library_dir; do
             dest="$destdir/$dest"
 
             if [ $individual -eq 1 ]; then
-                if [ -d "$dest" ] || [ -h "$dest" ]; then
-                    echo >&2 "Error: $dest already exists, can't link from $dir"
-                    existing_fn="$(music_find "$dest" | head -n 1)"
-                    if [ -n "$existing_fn" ]; then
-                        echo >&2 "One file from the existing directory: $existing_fn"
-                    fi
-                    continue
-                fi
                 if [ $dry_run -eq 0 ]; then
                     mkdir -p "$dest"
                 fi
                 while read -r fn; do
                     if [ $dry_run -eq 0 ]; then
-                        link "$fn" "$dest/"
+                        link "$fn" "$dest/${fn##*/}" || continue
                     fi
                 done <"$audiofiles"
             else
