@@ -11,10 +11,12 @@ check_dest () {
     else
         check_dest_parent="$(dirname "$dest")"
         if [ -h "$check_destpath" ]; then
-            oldcheck_destpath="$(cd "$check_dest_parent" && abspath "$(readlink "$check_destpath")")" || return 1
-            if [ "$oldcheck_destpath" != "$check_src" ]; then
-                echo >&2 "Error: $check_destpath exists but points to $oldcheck_destpath, not $check_src"
-                return 1
+            if ! [ "$check_destpath" -ef "$check_src" ]; then
+                oldcheck_destpath="$(cd "$check_dest_parent" && abspath "$(readlink "$check_destpath")")"
+                if [ "$oldcheck_destpath" != "$check_src" ]; then
+                    echo >&2 "Error: $check_destpath exists but points to $oldcheck_destpath, not $check_src"
+                    return 1
+                fi
             fi
         elif [ -e "$check_destpath" ]; then
             echo >&2 "Error: $check_destpath already exists, cannot update to $check_src"
