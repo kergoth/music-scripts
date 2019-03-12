@@ -2,6 +2,7 @@
 tracknum_vars="track tracknumber tracktotal totaltracks"
 discnum_vars="disc discnumber disctotal totaldiscs"
 md_vars="$tracknum_vars $discnum_vars \
+         releasetype \
          genre albumgenre \
          year originalyear \
          media tmed \
