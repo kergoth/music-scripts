@@ -217,8 +217,7 @@ get_new_filename() {
         newfn=
     fi
 
-    if echo "$releasetype" | tr '/,;' '   ' | grep -qwi compilation \
-        || ([ -n "$compilation" ] && [ "$compilation" = 1 ]) \
+    if ([ -n "$compilation" ] && [ "$compilation" = 1 ]) \
         || ([ -n "$album_artist" ] && echo "$album_artist" | grep -qi '^various'); then
         newfn="$newfn$artist - "
         compilation=1
