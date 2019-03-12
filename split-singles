@@ -223,7 +223,7 @@ for library_dir; do
             fi
         elif [ "$count" -eq "$total" ]; then
             if echo "$releasetype" | tr '/,' '  ' | grep -qwi single \
-                || [ "$total" -eq 1 ] || echo "$base" | grep -q Single; then
+                || [ "$total" -eq 1 ] || echo "$base" | grep -qiw Single; then
                 d="$singlesdir"
             else
                 d="$albumsdir"
