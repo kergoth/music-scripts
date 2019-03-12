@@ -358,6 +358,44 @@ get_album_year() {
     fi
 }
 
+get_album_id() {
+    album_id=
+    if [ -n "$musicbrainz_album_id" ]; then
+        album_id="$musicbrainz_album_id"
+        echo "$album_id"
+    else
+        year="$(get_album_year)"
+        track="$(get_tracknumber || :)"
+        case "$track" in
+            */*)
+                tracknumber="${track%/*}"
+                tracktotal="${track##*/}"
+                ;;
+            *)
+                tracknumber="$track"
+                tracktotal=
+                ;;
+        esac
+        disc="$(get_discnumber)" || :
+        case "$disc" in
+            */*)
+                discnumber="${disc%/*}"
+                disctotal="${disc##*/}"
+                ;;
+            *)
+                discnumber="$disc"
+                disctotal=1
+                ;;
+        esac
+        album_id_string="${album_artist} ${album} ${compilation} ${year} ${tracktotal} ${disctotal}"
+        if which md5sum >/dev/null 2>&1; then
+            echo "$album_id_string" | md5
+        else
+            echo "$album_id_string" | md5
+        fi
+    fi
+}
+
 get_genre() {
     if [ -n "$albumgenre" ]; then
         genre="$albumgenre"
