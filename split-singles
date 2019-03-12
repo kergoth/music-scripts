@@ -251,7 +251,7 @@ for library_dir; do
         rel="$(relpath "$dir" "$library_dir")"
         if [ $verbose -eq 1 ]; then
             clearbar
-            echo "$rel: $count / $total -> $d"
+            echo "$rel: $count / $total -> ${fdestdir#$destdir/}/$d"
         fi
         if [ "$d" = "$singletracksdir" ] \
             && [ $flatten_single_tracks -eq 1 ] \
