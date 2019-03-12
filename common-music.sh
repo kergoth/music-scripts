@@ -338,6 +338,16 @@ get_album_track_total() {
         )
 }
 
+media=
+get_media_type() {
+    if [ -z "$media" ]; then
+        media="$tmed"
+    fi
+    if [ -n "$media" ]; then
+        echo "$media"
+    fi
+}
+
 get_genre() {
     if [ -n "$albumgenre" ]; then
         genre="$albumgenre"
