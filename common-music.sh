@@ -348,6 +348,16 @@ get_media_type() {
     fi
 }
 
+year=
+get_album_year() {
+    if [ -z "$year" ]; then
+        year="$originalyear"
+    fi
+    if [ -n "$year" ]; then
+        echo "$year"
+    fi
+}
+
 get_genre() {
     if [ -n "$albumgenre" ]; then
         genre="$albumgenre"
