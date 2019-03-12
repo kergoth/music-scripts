@@ -267,20 +267,21 @@ for library_dir; do
             fi
         else
             dest=
+
+            if echo "$base" | grep -qwi sampler; then
+                d="$samplersdir"
+            fi
+
             if [ -n "$hoisted_genres" ] || [ -n "$flattened_genres" ]; then
                 if [ -n "$hoisted_genres" ] \
                     && echo "$genre" | grep -Eqx "$hoisted_genres"; then
                     # shellcheck disable=SC2059
                     d="$(printf "$hoistedgenresdir" "$genre")"
+                    if [ -n "$flattened_genres" ] \
+                        && echo "$genre" | grep -Eqx "$flattened_genres"; then
+                        dest="$d/$base"
+                    fi
                 fi
-                if [ -n "$flattened_genres" ] \
-                    && echo "$genre" | grep -Eqx "$flattened_genres"; then
-                    dest="$d/$base"
-                fi
-            fi
-
-            if echo "$base" | grep -qwi sampler; then
-                d="$samplersdir"
             fi
 
             if [ $separate -eq 0 ]; then
