@@ -93,10 +93,72 @@ eval_metadata() {
     # done
     fn="$1"
     shift
+
     eval "$(get_metadata "$fn" "$@")"
     if [ -z "$title" ] && [ -z "$track" ] && [ -z "$tracknumber" ]; then
         eval "$(get_metadata_exif "$@")"
     fi
+
+    # Fallbacks for tag differences between formats
+    if [ -z "$artist" ]; then
+        artist="$artists"
+    fi
+    if [ -z "$year" ]; then
+        originalyear="$year"
+    fi
+    if [ -z "$media" ]; then
+        media="$tmed"
+    fi
+
+    # Ensure that track, tracknumber, and tracktotal are set if possible
+    if [ -z "$tracktotal" ] && [ -n "$totaltracks" ]; then
+        tracktotal="$totaltracks"
+    fi
+    case "$track" in
+        */*)
+            tracknumber="${track%/*}"
+            tracktotal="${track##*/}"
+            ;;
+        '')
+            if [ -n "$tracknumber" ]; then
+                track="$tracknumber"
+                if [ -n "$tracktotal" ]; then
+                    track="$tracknumber/$tracktotal"
+                fi
+            fi
+            ;;
+        *)
+            tracknumber="$track"
+            if [ -n "$tracktotal" ]; then
+                track="$track/$tracktotal"
+            fi
+            ;;
+    esac
+
+    # Ensure that disc, discnumber, and disctotal are set if possible
+    if [ -z "$disctotal" ] && [ -n "$totaldiscs" ]; then
+        disctotal="$totaldiscs"
+    fi
+    case "$disc" in
+        */*)
+            discnumber="${disc%/*}"
+            disctotal="${disc##*/}"
+            ;;
+        '')
+            if [ -n "$discnumber" ]; then
+                disc="$discnumber"
+                if [ -n "$disctotal" ]; then
+                    disc="$discnumber/$disctotal"
+                fi
+            fi
+            ;;
+        *)
+            discnumber="$disc"
+            if [ -n "$disctotal" ]; then
+                disc="$disc/$disctotal"
+            fi
+            ;;
+    esac
 }
 
 eval_common_metadata() {
@@ -119,30 +181,6 @@ get_new_filename() {
 
     fn="$1"
     source_dir="$2"
-    track="$(get_tracknumber || :)"
-    case "$track" in
-        */*)
-            tracknumber="${track%/*}"
-            tracktotal="${track##*/}"
-            ;;
-        *)
-            tracknumber="$track"
-            tracktotal=
-            ;;
-    esac
-
-    disc="$(get_discnumber)" || :
-    case "$disc" in
-        */*)
-            discnumber="${disc%/*}"
-            disctotal="${disc##*/}"
-            ;;
-        *)
-            discnumber="$disc"
-            disctotal=1
-            ;;
-    esac
-
     if [ -n "$album" ]; then
         albumdir="$album"
     else
@@ -210,67 +248,7 @@ get_new_filename() {
     echo "$destfn"
 }
 
-get_tracknumber() {
-    case "$track" in
-        */*)
-            tracknumber="${track%/*}"
-            tracktotal="${track##*/}"
-            ;;
-        '') ;;
-
-        *)
-            tracknumber="$track"
-            ;;
-    esac
-    if [ -z "$tracknumber" ]; then
-        return 1
-    fi
-    if [ -z "$tracktotal" ] && [ -n "$totaltracks" ]; then
-        tracktotal="$totaltracks"
-    fi
-    printf "$tracknumber"
-    if [ -n "$tracktotal" ]; then
-        printf "/$tracktotal"
-    fi
-    printf '\n'
-}
-
-get_discnumber() {
-    case "$disc" in
-        */*)
-            discnumber="${disc%/*}"
-            disctotal="${disc##*/}"
-            ;;
-        '') ;;
-
-        *)
-            discnumber="$disc"
-            ;;
-    esac
-    if [ -z "$discnumber" ]; then
-        discnumber=1
-    fi
-    if [ -z "$disctotal" ] && [ -n "$totaldiscs" ]; then
-        disctotal="$totaldiscs"
-    fi
-    printf "$discnumber"
-    if [ -n "$disctotal" ]; then
-        printf "/$disctotal"
-    fi
-    printf '\n'
-}
-
-# We need to get the total tracks for all discs to get a true total
 get_album_track_total_indiv_discs() {
-    track="$(get_tracknumber || :)"
-    case "$track" in
-        */*)
-            tracktotal="${track##*/}"
-            ;;
-        *)
-            tracktotal=
-            ;;
-    esac
     if [ -n "$tracktotal" ]; then
         echo "$tracktotal"
     else
@@ -298,30 +276,6 @@ get_album_track_total() {
             total=0
             while read -r fn; do
                 eval_common_metadata "$fn"
-
-                track="$(get_tracknumber || :)"
-                case "$track" in
-                    */*)
-                        tracknumber="${track%/*}"
-                        tracktotal="${track##*/}"
-                        ;;
-                    *)
-                        tracknumber="$track"
-                        tracktotal=
-                        ;;
-                esac
-
-                disc="$(get_discnumber)"
-                case "$disc" in
-                    */*)
-                        discnumber="${disc%/*}"
-                        disctotal="${disc##*/}"
-                        ;;
-                    *)
-                        discnumber="$disc"
-                        disctotal=1
-                        ;;
-                esac
 
                 existing_total="$(eval "printf '%s' \"\${total$discnumber}\"")"
                 if [ -z "$existing_total" ]; then
@@ -369,28 +323,6 @@ get_album_id() {
         echo "$album_id"
     else
         year="$(get_album_year)"
-        track="$(get_tracknumber || :)"
-        case "$track" in
-            */*)
-                tracknumber="${track%/*}"
-                tracktotal="${track##*/}"
-                ;;
-            *)
-                tracknumber="$track"
-                tracktotal=
-                ;;
-        esac
-        disc="$(get_discnumber)" || :
-        case "$disc" in
-            */*)
-                discnumber="${disc%/*}"
-                disctotal="${disc##*/}"
-                ;;
-            *)
-                discnumber="$disc"
-                disctotal=1
-                ;;
-        esac
         album_id_string="${album_artist} ${album} ${compilation} ${year} ${tracktotal} ${disctotal}"
         if which md5sum >/dev/null 2>&1; then
             echo "$album_id_string" | md5
