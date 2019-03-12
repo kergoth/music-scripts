@@ -207,6 +207,12 @@ for library_dir; do
         fi
         genre="$(get_genre "$first" "$soundtrack_blacklist")"
 
+        if echo "$releasetype" | tr '/,;' '   ' | grep -qwi spokenword; then
+            fdestdir="$destdir/Audio"
+        else
+            fdestdir="$destdir/Music"
+        fi
+
         if [ -z "$total" ]; then
             if [ "$count" -gt 1 ]; then
                 d="$albumsdir"
@@ -253,7 +259,7 @@ for library_dir; do
                 [ -n "$hoisted_genres" ] \
                     && echo "$genre" | grep -Eqx "$hoisted_genres"
             ); then
-            dest="$destdir/$d"
+            dest="$fdestdir/$d"
             if [ $dry_run -eq 0 ]; then
                 mkdir -p "$dest"
             fi
@@ -293,7 +299,7 @@ for library_dir; do
             elif [ -z "$dest" ]; then
                 dest="$d/$rel"
             fi
-            dest="$destdir/$dest"
+            dest="$fdestdir/$dest"
 
             if [ $individual -eq 1 ]; then
                 if [ $dry_run -eq 0 ]; then
