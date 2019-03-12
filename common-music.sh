@@ -9,6 +9,8 @@ md_vars="$tracknum_vars $discnum_vars \
          musicbrainz_album_id \
          artist album_artist artists \
          title album compilation discsubtitle"
+known_releasetypes="album compilation ep live other remix \
+                    single soundtrack spokenword"
 
 die() {
     ret="$1"
