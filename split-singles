@@ -208,9 +208,11 @@ for library_dir; do
         genre="$(get_genre "$first" "$soundtrack_blacklist")"
 
         if echo "$releasetype" | tr '/,;' '   ' | grep -qwi spokenword; then
-            fdestdir="$destdir/Audio"
+            ddestdir="$destdir/Non-Music"
+            dseparate=0
         else
-            fdestdir="$destdir/Music"
+            ddestdir="$destdir"
+            dseparate=$separate
         fi
 
         if [ -z "$total" ]; then
@@ -251,7 +253,7 @@ for library_dir; do
         rel="$(relpath "$dir" "$library_dir")"
         if [ $verbose -eq 1 ]; then
             clearbar
-            echo "$rel: $count / $total -> ${fdestdir#$destdir/}/$d"
+            echo "$rel: $count / $total -> ${ddestdir#$destdir/}/$d"
         fi
         if [ "$d" = "$singletracksdir" ] \
             && [ $flatten_single_tracks -eq 1 ] \
@@ -259,7 +261,7 @@ for library_dir; do
                 [ -n "$hoisted_genres" ] \
                     && echo "$genre" | grep -Eqx "$hoisted_genres"
             ); then
-            dest="$fdestdir/$d"
+            dest="$ddestdir/$d"
             if [ $dry_run -eq 0 ]; then
                 mkdir -p "$dest"
             fi
@@ -290,7 +292,7 @@ for library_dir; do
                 fi
             fi
 
-            if [ $separate -eq 0 ]; then
+            if [ $dseparate -eq 0 ]; then
                 d=.
             fi
 
@@ -299,7 +301,7 @@ for library_dir; do
             elif [ -z "$dest" ]; then
                 dest="$d/$rel"
             fi
-            dest="$fdestdir/$dest"
+            dest="$ddestdir/$dest"
 
             if [ $individual -eq 1 ]; then
                 if [ $dry_run -eq 0 ]; then
