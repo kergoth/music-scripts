@@ -202,7 +202,7 @@ get_new_filename() {
             else
                 fn_tracknumber="$discnumber-0"
             fi
-        else
+        elif [ -n "$discnumber" ]; then
             if [ -n "$discsubtitle" ]; then
                 albumdir="$albumdir Disc $discnumber: $discsubtitle"
             else
