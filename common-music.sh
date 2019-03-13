@@ -243,7 +243,13 @@ get_new_filename() {
         artistdir="[unknown]"
     fi
     artistdir="$(fn_sanitize "$artistdir")"
-    albumdir="$(fn_sanitize "$albumdir" "s/:$//" | sed -e 's/^The \(.*\)/\1, The/')"
+    albumdir="$(fn_sanitize "$albumdir" "s/:$//")"
+    # Special case. Soundtracks are generally a movie name, which we shouldn't
+    # be changing, or it won't line up with the movie name anymore.
+    genre="$(get_genre)"
+    if [ "$genre" != Soundtrack ]; then
+        albumdir="$(echo "$albumdir" | sed -e 's/^The \(.*\)/\1, The/')"
+    fi
     destdir="$artistdir/$albumdir"
     newfn="$(fn_sanitize "$newfn" "s/:$//")"
     destfn="$source_dir/$destdir/$newfn"
