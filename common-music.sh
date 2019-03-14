@@ -376,6 +376,7 @@ get_genre() {
     esac
     base="$(basename "$(dirname "$1")")"
     if [ "$genre" != Game ] \
+        && [ "$genre" != Soundtrack ] \
         && ([ -z "$2" ] || ! echo "$base" | grep -qEx "$2"); then
         if echo "$base" | grep -qi soundtrack \
             || echo "$base" | grep -qiw ost; then
