@@ -3,6 +3,9 @@
 
 set -e
 
+MAX_DISCS=5
+TAB=$(printf '\t')
+
 # shellcheck source=./common.sh
 . "$(dirname "$0")/common.sh"
 # shellcheck source=./trap.sh
@@ -26,23 +29,6 @@ process_args() {
     shift $((OPTIND - 1))
 }
 
-max_discs=5
-TAB=$(printf '\t')
-list_track_file_candidates() {
-    # id="$1"
-    # album_artist="$2"
-    # album="$3"
-    # discnumber="$4"
-    # tracknumber="$5"
-    # artist="$6"
-    # name="$7"
-    # info "$*"
-    list_track_album_dir_candidates | while read -r album_dir; do
-        find "$album_dir" -iname "$tracknumber - $name.*"
-        find "$album_dir" -iname "$tracknumber - $artist - $name.*"
-    done
-}
-
 list_track_album_dir_candidates() {
     for library_dir in ./*/; do
         for dartist in "$album_artist" "Various Artists" "Compilations"; do
@@ -50,7 +36,7 @@ list_track_album_dir_candidates() {
                 echo "$library_dir/$dartist/$album"
                 continue
             fi
-            for disc in $(seq 1 "$max_discs"); do
+            for disc in $(seq 1 "$MAX_DISCS"); do
                 if [ -d "$library_dir/$dartist/Disc $disc" ]; then
                     echo "$library_dir/$dartist/Disc $disc"
                 else
@@ -82,20 +68,27 @@ process_playlists() {
             | jq '.[0].Playlists[0]["Playlist Items"] | .[]."Track ID"' >"$tmpdir/trackids"
         cat "$tmpdir/playlist.json" \
             | jq '.[].Tracks | .[] | [."Track ID", ."Album Artist", .Album, ."Disc Number", ."Track Number", .Artist, .Name] | join("\t")' -r | sort -n >"$tmpdir/tracks"
-        info "Track IDs: $(cat "$tmpdir/trackids" | xargs)"
+        # info "Track IDs: $(cat "$tmpdir/trackids" | xargs)"
         outname="${playlist##*/}"
         outname="${outname%.xml}"
         cat "$tmpdir/trackids" \
             | while read -r id; do
                 grep "^$id$TAB" "$tmpdir/tracks"
             done \
-            | sed -e 's/		/	 	/' \
+            | sed -e 's/		/	 	/g' \
             | while IFS="$TAB" read -r id album_artist album discnumber tracknumber artist name; do
+                if [ "$album_artist" = " " ]; then
+                    album_artist="$artist"
+                fi
+                if [ "$discnumber" = " " ]; then
+                    discnumber=1
+                fi
                 info "Track $id: $album_artist/$album Disc $discnumber/$tracknumber - $artist - $name"
                 track="$(find_track)"
                 if [ -n "$track" ]; then
                     echo "$track" | sed -e 's#\./##; s#//#/#g; s#/#\\#g'
                 else
+                    warn "Unable to find $album_artist/$album/$tracknumber - $artist - $name"
                     printf 'Missing_Track\\%s\\%s\\%s - %s - %s.mp3\n' "$album_artist" "$album" "$tracknumber" "$artist" "$name"
                 fi
             done >"$outname.m3u"
@@ -125,13 +118,6 @@ main() {
     trap 'rm -rf "$tmpdir"; trap - TERM; kill -TERM 0' TERM
 
     process_playlists "$@"
-
-    # stdouttest=$(run echo output)
-    # assert "$stdouttest" = output
-    # info "PID: $$"
-    # run sleep 15
-
-    wait
 }
 
 if [ "$scriptname" = "playlists_from_itunes" ]; then
