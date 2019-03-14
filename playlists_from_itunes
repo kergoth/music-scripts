@@ -8,6 +8,8 @@ TAB=$(printf '\t')
 
 # shellcheck source=./common.sh
 . "$(dirname "$0")/common.sh"
+# shellcheck source=./common-music.sh
+. "$(dirname "$0")/common-music.sh"
 # shellcheck source=./trap.sh
 . "$(dirname "$0")/trap.sh"
 
@@ -30,32 +32,41 @@ process_args() {
 }
 
 list_track_album_dir_candidates() {
+    artistdir="$(fn_sanitize "$album_artist")"
+    albumdir="$(fn_sanitize "$album" "s/:$//")"
     for library_dir in ./*/; do
-        for dartist in "$album_artist" "Various Artists" "Compilations"; do
-            if [ -d "$library_dir/$dartist/$album" ]; then
-                echo "$library_dir/$dartist/$album"
-                continue
-            fi
-            for disc in $(seq 1 "$MAX_DISCS"); do
-                if [ -d "$library_dir/$dartist/Disc $disc" ]; then
-                    echo "$library_dir/$dartist/Disc $disc"
-                else
-                    ls="$(ls -1d "$library_dir/$dartist/Disc $disc: "* 2>/dev/null || :)"
-                    if [ -n "$ls" ]; then
-                        echo "$ls"
-                    else
-                        break
-                    fi
+        for albumdir in "$album" "$(echo "$albumdir" | sed -e 's/^The \(.*\)/\1, The/')"; do
+            for dartist in "$artistdir" "Various Artists" "Compilations"; do
+                if [ -d "$library_dir/$dartist/$albumdir" ]; then
+                    echo "$library_dir/$dartist/$albumdir"
+                    continue
                 fi
+                for disc in $(seq 1 "$MAX_DISCS"); do
+                    if [ -d "$library_dir/$dartist/Disc $disc" ]; then
+                        echo "$library_dir/$dartist/Disc $disc"
+                    else
+                        ls="$(ls -1d "$library_dir/$dartist/Disc $disc: "* 2>/dev/null || :)"
+                        if [ -n "$ls" ]; then
+                            echo "$ls"
+                        else
+                            break
+                        fi
+                    fi
+                done
             done
         done
     done
 }
 
 find_track() {
-    list_track_album_dir_candidates | while read -r album_dir; do
-        find "$album_dir" -iname "$tracknumber - $name.*"
-        find "$album_dir" -iname "$tracknumber - $artist - $name.*"
+    list_track_album_dir_candidates | sort -u | while read -r album_dir; do
+        cname="$(fn_sanitize "$name" "s/:$//" || :)"
+        find "$album_dir" -iname "$tracknumber - $cname.*"
+        find "$album_dir" -iname "$tracknumber - $artist - $cname.*"
+        find ./*/"$album_artist" -iname "$tracknumber - $cname.*" 2>/dev/null || :
+        find ./*/"$album_artist" -iname "$tracknumber - $artist - $cname.*" 2>/dev/null || :
+        find . -iname "$tracknumber - $cname.*" || :
+        find . -iname "$tracknumber - $artist - $cname.*" || :
     done | head -n 1
 }
 
