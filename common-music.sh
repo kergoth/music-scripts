@@ -377,10 +377,11 @@ get_genre() {
     base="$(basename "$(dirname "$1")")"
     if [ "$genre" != Game ] \
         && ([ -z "$2" ] || ! echo "$base" | grep -qEx "$2"); then
-        if echo "$releasetype" | tr '/,' '  ' | grep -qwi soundtrack \
-            || echo "$base" | grep -qi soundtrack \
+        if echo "$base" | grep -qi soundtrack \
             || echo "$base" | grep -qiw ost; then
             genre=Soundtrack
+        elif echo "$releasetype" | tr '/,' '  ' | grep -qwi soundtrack; then
+            echo >&2 "Warning: $1 has a soundtrack releasetype, but no Soundtrack genre"
         fi
     fi
     if [ -z "$genre" ]; then
