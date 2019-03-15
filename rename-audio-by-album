@@ -36,10 +36,14 @@ if [ $# -eq 0 ]; then
     set -- .
 fi
 
+outdir=
 dry_run=0
 separate_discs=0
-while getopts ndh opt; do
+while getopts o:ndh opt; do
     case "$opt" in
+        o)
+            outdir="$OPTARG"
+            ;;
         n)
             dry_run=1
             ;;
@@ -68,6 +72,11 @@ for source_dir; do
         continue
     fi
     source_dir="${source_dir%/}"
+    if [ -n "$outdir" ]; then
+        soutdir=$outdir
+    else
+        soutdir="$source_dir"
+    fi
     music_find "$source_dir" >"$audiofiles"
     filecount=$(wc -l <"$audiofiles" | xargs)
     curcount=0
@@ -80,7 +89,7 @@ for source_dir; do
             echo >&2 "Error: no useful tags for $fn, skipping"
             continue
         fi
-        newfn="$(get_new_filename ${separate_discs+-d} "$fn" "$source_dir")"
+        newfn="$(get_new_filename ${separate_discs+-d} "$fn" "$soutdir")"
         if [ $(echo "$newfn" | wc -l) -ne 1 ]; then
             echo >&2 "Error: invalid new fn $newfn for $fn, skipping"
             continue
