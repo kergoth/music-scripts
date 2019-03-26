@@ -39,8 +39,9 @@ get_metadata() {
     esac
 
     pat="$(echo "$@" | sed -e 's/  */ /g')"
-    ffprobe -v quiet -of flat=s=_ -show_entries format_tags "$fn" \
-        | cut -d_ -f3- \
+    ffprobe -v quiet -show_format -show_streams -of flat=s=_ -show_entries format_tags "$1" \
+        | cut -d_ -f2- \
+        | sed -e 's/^tags_//' \
         | while IFS="=" read -r key value; do
             key="$(printf '%s\n' "$key" | tr "[:upper:]" "[:lower:]")"
             if [ -n "$pat" ]; then
