@@ -1,0 +1,16 @@
+#!/bin/sh
+
+. ~/Repos/github.com/kergoth/music-scripts/common-music.sh
+
+export LC_ALL=en_US.utf-8
+
+while read -r fn; do
+    (
+        eval_common_metadata "$fn" >/dev/null
+        for arg; do
+            (
+                eval "$arg"
+            )
+        done
+    )
+done
