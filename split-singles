@@ -45,6 +45,7 @@ set -e
 PATH="$(cd "$(dirname "$0")" && pwd):$PATH"
 
 prefix=
+broadcastsdir=${prefix}Broadcasts
 albumsdir=${prefix}Albums
 extrasdir="${prefix}Albums With Extra Tracks"
 incompletedir="${prefix}Incomplete Albums"
@@ -215,7 +216,9 @@ for library_dir; do
             dseparate=$separate
         fi
 
-        if [ -z "$total" ]; then
+        if echo "$releasetype" | tr '/,;' '   ' | grep -qwi broadcast; then
+            d="$broadcastsdir"
+        elif [ -z "$total" ]; then
             if [ "$count" -gt 1 ]; then
                 d="$albumsdir"
             else
