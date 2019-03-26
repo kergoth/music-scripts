@@ -1,0 +1,3 @@
+echo "$artist" | grep -qi klepacki	Frank Klepacki
+echo "$artist" | grep -Eqi '8in8|Dresden|Amanda Palmer'	Amanda Palmer
+echo "$artist" | grep -Eqi 'Stereo Alchemy|Christopher Tin'	Christopher Tin

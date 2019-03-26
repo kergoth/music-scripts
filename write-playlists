@@ -1,0 +1,74 @@
+#!/bin/sh
+
+# shellcheck source=/Users/kergoth/Repos/github.com/kergoth/music-scripts/common-music.sh
+. ~/Repos/github.com/kergoth/music-scripts/common-music.sh
+
+playlist_rules="./playlist.rules"
+TAB="$(printf '\t')"
+
+usage() {
+    cat >&2 <<END
+${0##*/} [options] OUTPUT_DIR
+
+Options:
+
+-r RULES_FILE    Specify the playlist rules file. Default: $playlist_rules
+-v    Verbose output
+-h    Show this help page
+END
+exit 2
+}
+
+verbose=0
+while getopts r:vh opt; do
+    case "$opt" in
+        r)
+            if ! [ -r "$playlist_rules" ]; then
+                echo >&2 "Error: RULES_FILE $playlist_rules must exist"
+                usage
+            fi
+            playlist_rules="$OPTARG"
+            ;;
+        v)
+            verbose=1
+            ;;
+        \? | h)
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+if [ $# -eq 0 ]; then
+    usage
+fi
+
+playlistsdir="$1"
+if [ -z "$playlistsdir" ]; then
+    usage
+fi
+if ! [ -d "$playlistsdir" ]; then
+    echo >&2 "Error: OUTPUT_DIR $playlistsdir must be an existing directory"
+    exit 1
+fi
+
+# Remove the existing playlists whose names are in playlist.rules
+while IFS="$TAB" read -r rule playlist_name; do
+    rm -f "$playlistsdir/$playlist_name.m3u8"
+done <"$playlist_rules"
+
+music_find . | while read -r fn; do
+    if [ $verbose -eq 1 ]; then
+        printf >&2 'Processing %s..\n' "$fn"
+    else
+        printf >&2 .
+    fi
+    (
+        eval_common_metadata "$fn" || exit 1
+        while IFS="$TAB" read -r rule playlist_name; do
+            if eval "$rule" >/dev/null; then
+                echo "$fn" | sed -e 's#^\./##; s#/#\\#g;' >>"$playlistsdir/$playlist_name.m3u8"
+            fi
+        done <"$playlist_rules"
+    )
+done
