@@ -1,0 +1,137 @@
+#!/bin/bash
+
+# shellcheck source=./common-music.sh
+. "$(dirname "$0")/common-music.sh"
+# shellcheck source=./trap.sh
+. "$(dirname "$0")/trap.sh"
+
+tmpdir="$(mktemp -d -t "${0##*/}.XXXXXX")" || exit 1
+case "$BASH_VERSION" in
+    '')
+        trap 'rm -rf "$tmpdir"; on_exit' EXIT
+        ;;
+    *)
+        trap 'rm -rf "$tmpdir"' EXIT
+        ;;
+esac
+trap 'rm -rf "$tmpdir"' INT TERM
+audiofiles="$tmpdir/audiofiles"
+
+set -e
+
+PATH="$(cd "$(dirname "$0")" && pwd):$PATH"
+
+# Games with data tracks and amazon albums whose videos and booklets are
+# counted in the track total. This blacklist only allows one track to be
+# missing at this time.
+incomplete_blacklist="Descent Mac Game Soundtrack|Shadow Warrior|Fantasy General|Stargunner Original Soundtrack|King's Quest VI Heir Today, Gone Tomorrow|Command & Conquer： Red Alert： Counterstrike|Command & Conquer： Tiberian Dawn： Covert Operations|Warcraft II： Tides of Darkness|Total Annihilation|Moto Racer|Return to Zork|Quake|Hexen II|.*\\[\\+video\\]|.*\\[\\+Digital Booklet\\]"
+
+usage() {
+    cat >&2 <<END
+${0##*/} [options] LIBRARY_DIR [LIBRARY_DIR..]
+
+Options:
+    -v    Verbose output
+    -d    Assume multi-disc albums are separated one disc per folder
+END
+    exit 2
+}
+
+verbose=0
+separated_disc_folders=0
+while getopts vdh opt; do
+    case "$opt" in
+        v)
+            verbose=1
+            ;;
+        d)
+            separated_disc_folders=1
+            ;;
+        \? | h)
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+if [ $# -eq 0 ]; then
+    set -- .
+fi
+
+preparebar 40
+totaldir=$#
+for library_dir; do
+    library_dir="$(abspath "$library_dir")"
+    if [ "$library_dir" = "$(pwd -P)" ]; then
+        # Don't recurse into ourselves
+        continue
+    fi
+    curdir=1
+    music_find "$library_dir" \
+        | sed -e 's#\(.*\)/.*#\1#' \
+        | sort -uf >"$tmpdir/dirs"
+    totaldir=$(wc -l <"$tmpdir/dirs" | xargs)
+    clearbar
+    while read -r dir; do
+        if [ $verbose -eq 0 ]; then
+            clearbar
+        fi
+        progressbar "$curdir" "$totaldir" "${library_dir##*/}" "$curdir/$totaldir"
+        curdir=$((curdir + 1))
+        if [ ! -e "$dir" ]; then
+            continue
+        fi
+        dir="${dir%/}"
+        base="${dir##*/}"
+        music_find "$dir" >"$audiofiles"
+        if grep -qEvl '\.(mp3|flac)' "$audiofiles"; then
+            # At least 1 non-mp3/flac file is present, skip
+            echo >&2 "Skipping $dir, dr_meter can't handle it"
+            continue
+        fi
+
+        count="$(wc -l <"$audiofiles" | xargs)"
+        if [ "$count" -lt 1 ]; then
+            continue
+        fi
+        first="$(head -n 1 "$audiofiles")"
+        eval_common_metadata "$first"
+
+        if [ $separated_disc_folders -eq 1 ]; then
+            total="$(get_album_track_total_indiv_discs "$dir" || :)"
+        else
+            total="$(get_album_track_total "$dir" || :)"
+        fi
+
+        complete=0
+        if [ -z "$total" ]; then
+            if [ "$count" -gt 1 ]; then
+                complete=1
+            fi
+        elif [ "$count" -eq "$total" ]; then
+            complete=1
+        else
+            if [ "$count" -gt "1" ]; then
+                if [ "$count" -eq $((total - 1)) ] && echo "$base" | grep -qEx "$incomplete_blacklist"; then
+                    complete=1
+                fi
+            fi
+        fi
+        if [ $complete -eq 1 ]; then
+            outfile="$dir/${dir##*/}_dr.txt"
+            find "$dir" -iname \*.mp3 -o -iname \*.flac \
+                | tr '\n' '\0' \
+                | xargs -0 dr_meter >"$outfile" || rm -f "$outfile"
+        else
+            outfile="$dir/${dir##*/}_dr_nonalbum.txt"
+            find "$dir" -iname \*.mp3 -o -iname \*.flac \
+                | tr '\n' '\0' \
+                | xargs -0 dr_meter >"$outfile" || rm -f "$outfile"
+        fi
+        if [ -s "$outfile" ]; then
+            echo >&2 "Wrote $outfile"
+        else
+            rm -f "$outfile"
+        fi
+    done <"$tmpdir/dirs"
+done
