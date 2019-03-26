@@ -1,0 +1,7 @@
+#!/bin/sh
+
+cd "$(dirname "$0")" || exit $?
+find . -mindepth 3 -maxdepth 3 -mtime -7 \
+    | sed -e 's#\./##' \
+    | tr '\n' '\0' \
+    | xargs -0 ls -Adlhrt

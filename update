@@ -1,0 +1,14 @@
+#!/bin/sh
+
+export LC_ALL=en_US.utf-8
+
+set -eu
+
+scriptdir="$(cd "$(dirname "$0")" && pwd -P)"
+
+cd "$scriptdir"
+rm -rf ./*/
+split-singles -id ../By\ Source/*
+gcp -al ../Manual\ Additions/* .
+rockuefort scan
+env "$scriptdir/update-playlists-only"

@@ -1,0 +1,115 @@
+#!/bin/sh
+# shellcheck disable=SC2154
+
+export LC_ALL=en_US.utf-8
+
+set -e
+
+scriptdir="$(cd "$(dirname "$0")" && pwd -P)"
+TAB="$(printf '\t')"
+
+get_track_info() {
+    fn="$1"
+    shift
+    pat="$(echo "$@" | sed -e 's/  */ /g')"
+    ffprobe -v quiet -show_format -show_streams -of flat=s=_ -show_entries format_tags "$fn" \
+        | cut -d_ -f2- \
+        | sed -e 's/^tags_//' \
+        | while IFS="=" read -r key value; do
+            key="$(printf '%s\n' "$key" | tr "[:upper:]" "[:lower:]")"
+            if [ -n "$pat" ]; then
+                case " $pat " in
+                    *\ $key\ *) ;;
+
+                    *)
+                        continue
+                        ;;
+                esac
+            fi
+            printf '%s=%s\n' "$key" "$value"
+        done
+}
+
+extm3u_fragments() {
+    while read -r fn; do
+        unset duration artist title
+        eval "$(get_track_info "$fn" duration artist title)"
+        duration=$(printf %0.f\\n "$(echo "$duration+0.5" | bc)")
+
+        echo "#EXTINF:$duration,$artist - $title"
+        echo "$fn"
+    done
+}
+
+usage() {
+    cat >&2 <<END
+    ${0##*/} [options] [PLAYLIST_DIR]
+
+    PLAYLIST_DIR defaults to $playlistdir
+
+    Options:
+    -h    Show this usage info
+    -e    Write an extended m3u
+END
+    exit 2
+}
+
+playlistdir=./_Playlists
+extm3u=0
+while getopts ep:h opt; do
+    case "$opt" in
+        e)
+            extm3u=1
+            ;;
+        p)
+            playlistdir="$OPTARG"
+            if ! [ -d "$playlistdir" ]; then
+                echo >&2 "Error: OUTPUT_DIR $playlistdir must be an existing directory"
+                usage
+            fi
+            ;;
+        \? | h)
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+cd "$scriptdir"
+mkdir -p "$playlistdir"
+find ../Playlists -type f \
+    | while read -r playlist; do
+        dir="$(dirname "${playlist#../Playlists/}")"
+        destdir="$playlistdir/$dir"
+        if [ "$dir" != "." ]; then
+            rel="../$(echo "$dir/" | sed -e 's#[^/]*##g; s#/#../#g')"
+        else
+            rel=../
+        fi
+        echo >&2 "Processing $dir/${playlist##*/}.m3u8"
+        mkdir -p "$destdir"
+        newplaylist=$destdir/"$(basename "$playlist")".m3u8
+        rm -f "$newplaylist"
+        if [ "$extm3u" -eq 1 ]; then
+            echo "#EXTM3U" >"$newplaylist"
+        fi
+        rockuefort list --strip "$scriptdir/" "$playlist" 2>/dev/null \
+            | if ! grep -q '^# nosort' "$playlist"; then
+                sed -e 's#\(.*\)/\([^/]*\)$#\1	\2#' \
+                | gsort -s -t"$TAB" -k1,1 -k2,2n \
+                | uniq \
+                | tr '\t' /
+            else
+                cat
+            fi \
+                | if [ "$extm3u" -eq 1 ]; then
+                    extm3u_fragments
+                else
+                    cat
+                fi \
+                | sed -e "/^#/!s#^#$rel#; s#/#\\\\#g;" \
+                    >>"$newplaylist"
+        if ! [ -s "$newplaylist" ]; then
+            rm -f "$newplaylist"
+        fi
+    done
