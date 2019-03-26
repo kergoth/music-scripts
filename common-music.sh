@@ -100,7 +100,7 @@ eval_metadata() {
 
     eval "$(get_metadata "$fn" "$@")"
     if [ -z "$title" ] && [ -z "$track" ] && [ -z "$tracknumber" ]; then
-        eval "$(get_metadata_exif "$@")"
+        eval "$(get_metadata_exif "$fn" "$@")"
     fi
 
     # Fallbacks for tag differences between formats
