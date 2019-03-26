@@ -203,17 +203,19 @@ get_new_filename() {
         if [ -z "$discsubtitle" ]; then
             discsubtitle="$setsubtitle"
         fi
-        if [ $separate_disc_folders -eq 0 ]; then
-            if [ -n "$tracknumber" ]; then
-                fn_tracknumber="$discnumber-$tracknumber"
-            else
-                fn_tracknumber="$discnumber-0"
-            fi
-        elif [ -n "$discnumber" ]; then
-            if [ -n "$discsubtitle" ]; then
-                albumdir="$albumdir Disc $discnumber: $discsubtitle"
-            else
-                albumdir="$albumdir Disc $discnumber"
+        if [ -n "$discnumber" ]; then
+            if [ $separate_disc_folders -eq 0 ]; then
+                if [ -n "$tracknumber" ]; then
+                    fn_tracknumber="$discnumber-$tracknumber"
+                else
+                    fn_tracknumber="$discnumber-0"
+                fi
+            elif [ -n "$discnumber" ]; then
+                if [ -n "$discsubtitle" ]; then
+                    albumdir="$albumdir Disc $discnumber: $discsubtitle"
+                else
+                    albumdir="$albumdir Disc $discnumber"
+                fi
             fi
         fi
     fi
