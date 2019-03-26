@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+
+import collections
+import pathlib
+import re
+import sys
+
+fingerprints = collections.defaultdict(set)
+blacklisted = re.compile('@|/\.sync/')
+
+seen = set()
+for fn in sys.argv[1:]:
+    with open(fn, 'r') as f:
+        for line in f.readlines():
+            try:
+                song_fn, fingerprint = line.rstrip().split('\t', 1)
+            except ValueError:
+                continue
+            else:
+                if blacklisted.search(song_fn):
+                    continue
+                song = pathlib.Path(song_fn)
+                if not song.exists():
+                    sys.stderr.write(f'Warning: {song_fn} does not exist\n')
+                    continue
+                if song_fn in seen:
+                    continue
+                seen.add(song_fn)
+            fingerprints[fingerprint].add(song)
+
+for fingerprint, songs in fingerprints.items():
+    if len(songs) > 1:
+        # if all('_CCC' in str(f) or '_snapshot' in str(f) for f in songs):
+        #     songs = list(songs)[1:]
+        #     for song in songs:
+        #         print(song)
+        songs = '\t'.join(str(song).replace(' ', '\\ ') for song in songs)
+        print(songs)
