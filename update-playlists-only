@@ -6,40 +6,7 @@ export LC_ALL=en_US.utf-8
 set -e
 
 scriptdir="$(cd "$(dirname "$0")" && pwd -P)"
-TAB="$(printf '\t')"
-
-get_track_info() {
-    fn="$1"
-    shift
-    pat="$(echo "$@" | sed -e 's/  */ /g')"
-    ffprobe -v quiet -show_format -show_streams -of flat=s=_ -show_entries format_tags "$fn" \
-        | cut -d_ -f2- \
-        | sed -e 's/^tags_//' \
-        | while IFS="=" read -r key value; do
-            key="$(printf '%s\n' "$key" | tr "[:upper:]" "[:lower:]")"
-            if [ -n "$pat" ]; then
-                case " $pat " in
-                    *\ $key\ *) ;;
-
-                    *)
-                        continue
-                        ;;
-                esac
-            fi
-            printf '%s=%s\n' "$key" "$value"
-        done
-}
-
-extm3u_fragments() {
-    while read -r fn; do
-        unset duration artist title
-        eval "$(get_track_info "$fn" duration artist title)"
-        duration=$(printf %0.f\\n "$(echo "$duration+0.5" | bc)")
-
-        echo "#EXTINF:$duration,$artist - $title"
-        echo "$fn"
-    done
-}
+PATH="$scriptdir/../scripts:$PATH"
 
 usage() {
     cat >&2 <<END
@@ -55,7 +22,7 @@ END
 }
 
 playlistdir=./_Playlists
-extm3u=0
+extm3u=
 while getopts ep:h opt; do
     case "$opt" in
         e)
@@ -88,28 +55,5 @@ find ../Playlists -type f \
         fi
         echo >&2 "Processing $dir/${playlist##*/}.m3u8"
         mkdir -p "$destdir"
-        newplaylist=$destdir/"$(basename "$playlist")".m3u8
-        rm -f "$newplaylist"
-        if [ "$extm3u" -eq 1 ]; then
-            echo "#EXTM3U" >"$newplaylist"
-        fi
-        rockuefort list --strip "$scriptdir/" "$playlist" 2>/dev/null \
-            | if ! grep -q '^# nosort' "$playlist"; then
-                sed -e 's#\(.*\)/\([^/]*\)$#\1	\2#' \
-                | gsort -s -t"$TAB" -k1,1 -k2,2n \
-                | uniq \
-                | tr '\t' /
-            else
-                cat
-            fi \
-                | if [ "$extm3u" -eq 1 ]; then
-                    extm3u_fragments
-                else
-                    cat
-                fi \
-                | sed -e "/^#/!s#^#$rel#; s#/#\\\\#g;" \
-                    >>"$newplaylist"
-        if ! [ -s "$newplaylist" ]; then
-            rm -f "$newplaylist"
-        fi
+        rockuefort-gen-m3u -w ${extm3u:+-e} -p "$scriptdir/" -r "$rel" -d "$destdir" "$playlist"
     done
