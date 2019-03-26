@@ -99,7 +99,8 @@ process_playlists() {
                     discnumber=1
                 fi
                 if [ -z "$name" ]; then
-                    die 1 "No name for $id|$album_artist|$album|$discnumber|$tracknumber|$artist|$name"
+                    warn "No name for $id|$album_artist|$album|$discnumber|$tracknumber|$artist|$name"
+                    continue
                 fi
                 echo "# artist=$artist|album=$album|title=$name"
                 if [ -n "$artist" ]; then
