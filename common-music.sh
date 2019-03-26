@@ -182,6 +182,12 @@ get_new_filename() {
     else
         separate_disc_folders=0
     fi
+    if [ "$1" = "-t" ]; then
+        suffix_the=1
+        shift
+    else
+        suffix_the=0
+    fi
 
     fn="$1"
     source_dir="$2"
@@ -248,7 +254,7 @@ get_new_filename() {
     # Special case. Soundtracks are generally a movie name, which we shouldn't
     # be changing, or it won't line up with the movie name anymore.
     genre="$(get_genre)"
-    if [ "$genre" != Soundtrack ]; then
+    if [ $suffix_the -eq 1 ] && [ "$genre" != Soundtrack ]; then
         albumdir="$(echo "$albumdir" | sed -e 's/^The \(.*\)/\1, The/')"
     fi
     destdir="$artistdir/$albumdir"

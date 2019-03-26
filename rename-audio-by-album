@@ -21,6 +21,8 @@ usage() {
 ${0##*/} [options] SOURCE_DIR [SOURCE_DIR..]
 
 Options:
+    -o OUTDIR  Specify output directory
+    -t    Convert 'The ' prefix to ', The' suffix
     -n    Dry run
     -d    Separate discs into their own folders
 END
@@ -36,9 +38,13 @@ fi
 
 outdir=
 dry_run=0
-separate_discs=0
-while getopts o:ndh opt; do
+separate_discs=
+suffix_the=
+while getopts to:ndh opt; do
     case "$opt" in
+        t)
+            suffix_the=1
+            ;;
         o)
             outdir="$OPTARG"
             ;;
@@ -87,7 +93,7 @@ for source_dir; do
             echo >&2 "Error: no useful tags for $fn, skipping"
             continue
         fi
-        newfn="$(get_new_filename ${separate_discs+-d} "$fn" "$soutdir")"
+        newfn="$(get_new_filename ${separate_discs:+-d} ${suffix_the:+-t} "$fn" "$soutdir")"
         if [ $(echo "$newfn" | wc -l) -ne 1 ]; then
             echo >&2 "Error: invalid new fn $newfn for $fn, skipping"
             continue
