@@ -5,7 +5,7 @@ export LC_ALL=en_US.utf-8
 
 set -e
 
-scriptdir="$(cd "$(dirname "$0")" && pwd -P)"
+scriptdir="$(cd "$(dirname "$0")" && pwd)"
 PATH="$scriptdir/../scripts:$PATH"
 
 usage() {
@@ -55,5 +55,5 @@ find ../Playlists -type f \
         fi
         echo >&2 "Processing $dir/${playlist##*/}.m3u8"
         mkdir -p "$destdir"
-        rockuefort-gen-m3u -w ${extm3u:+-e} -p "$scriptdir/" -r "$rel" -d "$destdir" "$playlist"
+        rockuefort-gen-m3u -w ${extm3u:+-e} -r "$scriptdir/" -p "${rel%/}" -d "$destdir" "$playlist"
     done
