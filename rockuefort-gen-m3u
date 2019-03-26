@@ -1,0 +1,126 @@
+#!/bin/sh
+
+set -e
+
+scriptdir="$(cd "$(dirname "$0")" && pwd -P)"
+TAB="$(printf '\t')"
+
+# shellcheck source=./trap.sh
+. "$scriptdir/trap.sh"
+# shellcheck source=./common-music.sh
+. "$scriptdir/common-music.sh"
+
+usage() {
+    cat >&2 <<END
+    ${0##*/} [options] PLAYLIST [PLAYLIST..]
+
+    Options:
+    -d DESTDIR    Specify output directory for the new playlists
+    -r LIBRARY_ROOT    Specify library root. This is used to remove a prefix from the song
+          paths in the rockuefort database.
+    -p PLAYLIST_REL_PATH    Specify the relative path from the playlist m3u to the library root.
+
+    -w    Use windows path separators
+    -e    Write extended m3u. This is slower as it has to retrieve tags.
+    -h    Show this usage information
+END
+    exit 2
+}
+
+process_arguments() {
+    winpath=
+    extm3u=0
+    destdir=
+    library_root=
+    playlist_relpath=
+    verbose=0
+    while getopts d:wer:p:vh opt; do
+        case "$opt" in
+            w)
+                winpath=1
+                ;;
+            e)
+                extm3u=1
+                ;;
+            d)
+                destdir="$OPTARG"
+                if ! [ -d "$destdir" ]; then
+                    die 1 "DESTDIR $destdir must be an existing directory"
+                    usage
+                fi
+                ;;
+            r)
+                library_root="$(cd "$OPTARG" && pwd -P)"
+                ;;
+            p)
+                playlist_relpath="$OPTARG"
+                ;;
+            v)
+                verbose=1
+                ;;
+            \? | h)
+                usage
+                ;;
+        esac
+    done
+    shift $((OPTIND - 1))
+
+    if [ $# -eq 0 ]; then
+        usage
+    fi
+}
+
+extm3u_fragments() {
+    if [ $extm3u -eq 1 ]; then
+        while read -r fn; do
+            unset duration artist title
+            eval_common_metadata "$fn" duration artist title
+            if [ -z "$duration" ]; then
+                warn "Unable to determine duration for $fn, skipping extinf"
+            else
+                duration=$(printf %0.f\\n "$(echo "$duration+0.5" | bc)")
+                echo "#EXTINF:$duration,$artist - $title"
+            fi
+            echo "$fn"
+        done
+    else
+        cat
+    fi
+}
+
+sort_playlist() {
+    if ! grep -q '^# nosort' "$playlist"; then
+        sed -e 's#\(.*\)/\([^/]*\)$#\1	\2#' \
+            | gsort -s -t"$TAB" -k1,1 -k2,2n \
+            | uniq \
+            | tr '\t' /
+    else
+        cat
+    fi
+}
+
+process_arguments "$@"
+shift $((OPTIND - 1))
+
+for playlist; do
+    if [ $verbose -eq 1 ]; then
+        echo >&2 "Processing $playlist"
+    else
+        echo >&2 .
+    fi
+    newplaylist="$destdir/$(basename "$playlist")".m3u8
+    rm -f "$newplaylist"
+    if [ "$extm3u" -eq 1 ]; then
+        echo "#EXTM3U" >"$newplaylist"
+    fi
+    rockuefort list "$playlist" \
+        | sort_playlist \
+        | extm3u_fragments \
+        | sed -e "/^#/!s#^${library_root:+$library_root/}#${playlist_relpath:+$playlist_relpath/}#; ${winpath:+s#/#\\\\#g};" \
+            >>"$newplaylist"
+    if ! [ -s "$newplaylist" ]; then
+        rm -f "$newplaylist"
+    else
+        echo >&2 "Wrote $newplaylist"
+    fi
+done
