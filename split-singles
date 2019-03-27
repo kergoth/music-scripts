@@ -254,16 +254,18 @@ for library_dir; do
         fi
 
         rel="$(relpath "$dir" "$library_dir")"
-        if [ $verbose -eq 1 ]; then
-            clearbar
-            echo "$rel: $count / $total -> ${ddestdir#$destdir/}/$d"
-        fi
         if [ "$d" = "$singletracksdir" ] \
             && [ $flatten_single_tracks -eq 1 ] \
             && ! (
                 [ -n "$hoisted_genres" ] \
                     && echo "$genre" | grep -Eqx "$hoisted_genres"
             ); then
+
+            if [ $verbose -eq 1 ]; then
+                clearbar
+                echo "$rel: $count / $total -> ${ddestdir#$destdir/}/$d"
+            fi
+
             dest="$ddestdir/$d"
             if [ $dry_run -eq 0 ]; then
                 mkdir -p "$dest"
@@ -279,32 +281,36 @@ for library_dir; do
         else
             dest=
 
-            if echo "$base" | grep -qwi sampler; then
-                d="$samplersdir"
-            fi
+            if [ $dseparate -eq 0 ]; then
+                d=.
+            else
+                if echo "$base" | grep -qwi sampler; then
+                    d="$samplersdir"
+                fi
 
-            if [ -n "$hoisted_genres" ] || [ -n "$flattened_genres" ]; then
-                if [ -n "$hoisted_genres" ] \
-                    && echo "$genre" | grep -Eqx "$hoisted_genres"; then
-                    # shellcheck disable=SC2059
-                    d="$(printf "$hoistedgenresdir" "$genre")"
-                    if [ -n "$flattened_genres" ] \
-                        && echo "$genre" | grep -Eqx "$flattened_genres"; then
-                        dest="$d/$base"
+                case "$base" in
+                    The\ *)
+                        base="${base#The }, The"
+                        rel="${rel%/*}/$base"
+                        ;;
+                esac
+
+                if [ -n "$hoisted_genres" ] || [ -n "$flattened_genres" ]; then
+                    if [ -n "$hoisted_genres" ] \
+                        && echo "$genre" | grep -Eqx "$hoisted_genres"; then
+                        # shellcheck disable=SC2059
+                        d="$(printf "$hoistedgenresdir" "$genre")"
+                        if [ -n "$flattened_genres" ] \
+                            && echo "$genre" | grep -Eqx "$flattened_genres"; then
+                            dest="$d/$base"
+                        fi
                     fi
                 fi
             fi
 
-            if [ $dseparate -eq 0 ]; then
-                d=.
-            else
-                dalbumdir=${rel##*/}
-                case "$dalbumdir" in
-                    The\ *)
-                        dalbumdir="${dalbumdir#The }, The"
-                        rel="${rel%/*}/$dalbumdir"
-                        ;;
-                esac
+            if [ $verbose -eq 1 ]; then
+                clearbar
+                echo "$rel: $count / $total -> ${ddestdir#$destdir/}/$d"
             fi
 
             if echo "$d" | grep -Eqx "$flattened_dirs"; then
