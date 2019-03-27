@@ -111,8 +111,12 @@ for source_dir; do
             if [ $dry_run -eq 1 ]; then
                 echo "$fn -> $newfn"
             else
-                mkdir -p "$newfndir"
-                mv -v "$fn" "$newfn"
+                fn_lower="$(echo "$fn" | tr '[:upper:]' '[:lower:]')"
+                newfn_lower="$(echo "$newfn" | tr '[:upper:]' '[:lower:]')"
+                if [ "$fn_lower" != "$newfn_lower" ]; then
+                    mkdir -p "$newfndir"
+                    mv -v "$fn" "$newfn"
+                fi
             fi
 
             oldfndir="$(dirname "$fn")"
