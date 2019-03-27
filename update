@@ -8,7 +8,7 @@ scriptdir="$(cd "$(dirname "$0")" && pwd -P)"
 
 cd "$scriptdir"
 rm -rf ./*/
-split-singles -id ../By\ Source/*
+split-singles -i ../By\ Source/*
 gcp -al ../Manual\ Additions/* .
 rockuefort scan
 env "$scriptdir/update-playlists-only"
