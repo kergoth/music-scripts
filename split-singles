@@ -297,6 +297,14 @@ for library_dir; do
 
             if [ $dseparate -eq 0 ]; then
                 d=.
+            else
+                dalbumdir=${rel##*/}
+                case "$dalbumdir" in
+                    The\ *)
+                        dalbumdir="${dalbumdir#The }, The"
+                        rel="${rel%/*}/$dalbumdir"
+                        ;;
+                esac
             fi
 
             if echo "$d" | grep -Eqx "$flattened_dirs"; then
