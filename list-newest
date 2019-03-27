@@ -1,7 +1,8 @@
 #!/bin/sh
 
 cd "$(dirname "$0")" || exit $?
-find . -mindepth 3 -maxdepth 3 -mtime -7 \
-    | sed -e 's#\./##' \
+find . -mtime -7 \( -iname \*.flac -o -iname \*.mp3 -o -iname \*.m4a -o -iname \*.dsf \) \
+    | sed -e 's#^\./##; s#/[^/]*$##' \
+    | uniq \
     | tr '\n' '\0' \
     | xargs -0 ls -Adlhrt
