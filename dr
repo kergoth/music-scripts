@@ -114,6 +114,14 @@ for library_dir; do
                 complete=1
             fi
         fi
+        # Assumes a specific layout. Not ideal, but okay for now.
+        album="${dir##*/}"
+        case "$album" in
+            *\,\ The)
+                album="The ${album%, The}"
+                ;;
+        esac
+
         if [ $complete -eq 1 ]; then
             outfile="$dir/${dir##*/}_dr.txt"
             find "$dir" -iname \*.mp3 -o -iname \*.flac \
