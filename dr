@@ -104,17 +104,14 @@ for library_dir; do
         fi
 
         complete=0
-        if [ -z "$total" ]; then
-            if [ "$count" -gt 1 ]; then
+        # Unlike split-singles, here we don't assume a lack of track total to
+        # be a complete album, nor do we want to generate album dr for
+        # a single with one track, as it's pointless and redundant.
+        if [ "$count" -gt 1 ] && [ -n "$total" ]; then
+            if [ "$count" -eq "$total" ]; then
                 complete=1
-            fi
-        elif [ "$count" -eq "$total" ]; then
-            complete=1
-        else
-            if [ "$count" -gt "1" ]; then
-                if [ "$count" -eq $((total - 1)) ] && echo "$base" | grep -qEx "$incomplete_blacklist"; then
-                    complete=1
-                fi
+            elif [ "$count" -eq $((total - 1)) ] && echo "$base" | grep -qEx "$incomplete_blacklist"; then
+                complete=1
             fi
         fi
         if [ $complete -eq 1 ]; then
