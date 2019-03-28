@@ -56,4 +56,8 @@ find ../Playlists -type f \
         echo >&2 "Processing $dir/${playlist##*/}.m3u8"
         mkdir -p "$destdir"
         rockuefort-gen-m3u -w ${extm3u:+-e} -r "$scriptdir/" -p "${rel%/}" -d "$destdir" "$playlist"
+        if ! [ -e "$destdir/${playlist##*/}.m3u8" ]; then
+            echo >&2 "No playlist emitted for $playlist, cleaning up"
+            rmdir "$destdir" 2>/dev/null || :
+        fi
     done
