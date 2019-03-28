@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2002
 
 # shellcheck source=./common-music.sh
 . "$(dirname "$0")/common-music.sh"
@@ -19,6 +20,7 @@ audiofiles="$tmpdir/audiofiles"
 
 set -e
 
+TAB="$(printf '\t')"
 PATH="$(cd "$(dirname "$0")" && pwd):$PATH"
 
 # Games with data tracks and amazon albums whose videos and booklets are
@@ -83,7 +85,11 @@ for library_dir; do
         fi
         dir="${dir%/}"
         base="${dir##*/}"
-        music_find "$dir" >"$audiofiles"
+        music_find "$dir" \
+            | sed -e 's#\(.*\)/\([^/]*\)$#\1	\2#' \
+            | gsort -s -t"$TAB" -k1,1 -k2,2n \
+            | uniq \
+            | tr '\t' / >"$audiofiles"
         if grep -qEvl '\.(mp3|flac)' "$audiofiles"; then
             # At least 1 non-mp3/flac file is present, skip
             echo >&2 "Skipping $dir, dr_meter can't handle it"
@@ -123,16 +129,15 @@ for library_dir; do
         esac
 
         if [ $complete -eq 1 ]; then
-            outfile="$dir/${dir##*/}_dr.txt"
-            find "$dir" -iname \*.mp3 -o -iname \*.flac \
-                | tr '\n' '\0' \
-                | xargs -0 dr_meter >"$outfile" || rm -f "$outfile"
+            outfile="$dir/${album}_dr.txt"
         else
-            outfile="$dir/${dir##*/}_dr_nonalbum.txt"
-            find "$dir" -iname \*.mp3 -o -iname \*.flac \
-                | tr '\n' '\0' \
-                | xargs -0 dr_meter >"$outfile" || rm -f "$outfile"
+            outfile="$dir/${album}_dr_nonalbum.txt"
         fi
+
+        cat "$audiofiles" \
+            | tr '\n' '\0' \
+            | xargs -0 dr_meter >"$outfile" || rm -f "$outfile"
+
         if [ -s "$outfile" ]; then
             echo >&2 "Wrote $outfile"
         else
