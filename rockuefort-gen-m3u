@@ -15,7 +15,7 @@ usage() {
     ${0##*/} [options] PLAYLIST [PLAYLIST..]
 
     Options:
-    -d DESTDIR    Specify output directory for the new playlists
+    -d DESTDIR    Specify output directory for the new playlists. - for stdout.
     -r LIBRARY_ROOT    Specify library root. This is used to remove a prefix from the song
           paths in the rockuefort database.
     -p PLAYLIST_REL_PATH    Specify the relative path from the playlist m3u to the library root.
@@ -44,7 +44,7 @@ process_arguments() {
                 ;;
             d)
                 destdir="$OPTARG"
-                if ! [ -d "$destdir" ]; then
+                if [ "$destdir" != "-" ] && ! [ -d "$destdir" ]; then
                     die 1 "DESTDIR $destdir must be an existing directory"
                     usage
                 fi
@@ -108,8 +108,12 @@ for playlist; do
     else
         echo >&2 .
     fi
-    newplaylist="$destdir/$(basename "$playlist")".m3u8
-    rm -f "$newplaylist"
+    if [ "$destdir" = "-" ]; then
+        newplaylist=/dev/stdout
+    else
+        newplaylist="$destdir/$(basename "$playlist")".m3u8
+        rm -f "$newplaylist"
+    fi
     if [ "$extm3u" -eq 1 ]; then
         echo "#EXTM3U" >"$newplaylist"
     fi
@@ -118,9 +122,10 @@ for playlist; do
         | extm3u_fragments \
         | sed -e "/^#/!s#^${library_root:+$library_root/}#${playlist_relpath:+$playlist_relpath/}#; ${winpath:+s#/#\\\\#g};" \
             >>"$newplaylist"
-    if ! [ -s "$newplaylist" ]; then
+
+    if [ "$destdir" != "-" ] && ! [ -s "$newplaylist" ]; then
         rm -f "$newplaylist"
     else
-        echo >&2 "Wrote $newplaylist"
+        echo >&2 "Completed $playlist"
     fi
 done
