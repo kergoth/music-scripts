@@ -1,0 +1,5 @@
+#!/bin/sh
+
+find "$@" -mindepth 3 -maxdepth 3 -type d -print0 \
+    | xargs -0 sh -c 'for album; do drfile="$(find "$album"/ -name \*_dr\*.txt | head -n 1)"; if [ -n "$drfile" ] && [ -s "$drfile" ] && ! grep -q "No files analyzed" "$drfile"; then :; else echo "$album"; fi; done' \
+    | tee no_dr.txt
