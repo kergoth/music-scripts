@@ -71,6 +71,7 @@ ${0##*/} [options] LIBRARY_DIR [LIBRARY_DIR..]
 
 Options:
     -o DESTDIR    Link/move files to DESTDIR (default: \$PWD)
+    -r LIBRARY_ROOT  Explicitly specify library root to determine relative paths
     -v    Verbose output
     -i    Link tracks individually rather than album folders
     -H    Hard link tracks rather than soft link (only useful with -i)
@@ -84,6 +85,7 @@ END
 }
 
 destdir=.
+library_root=
 verbose=0
 individual=0
 hard_link_individual=0
@@ -92,10 +94,13 @@ separated_disc_folders=0
 dry_run=0
 flatten_single_tracks=1
 separate=1
-while getopts o:viHmdnSDh opt; do
+while getopts o:r:viHmdnSDh opt; do
     case "$opt" in
         o)
             destdir="$(abspath "$OPTARG")"
+            ;;
+        r)
+            library_root="$(abspath "$OPTARG")"
             ;;
         v)
             verbose=1
@@ -253,7 +258,7 @@ for library_dir; do
             fi
         fi
 
-        rel="$(relpath "$dir" "$library_dir")"
+        rel="$(relpath "$dir" "${library_root:-$library_dir}")"
         if [ "$d" = "$singletracksdir" ] \
             && [ $flatten_single_tracks -eq 1 ] \
             && ! (
