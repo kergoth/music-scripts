@@ -123,22 +123,32 @@ eval_metadata() {
         */*)
             tracknumber="${track%/*}"
             tracktotal="${track##*/}"
+            if [ "$tracktotal" = "0" ]; then
+                tracktotal=
+                track="$tracknumber"
+            fi
             ;;
         '')
             if [ -n "$tracknumber" ]; then
                 track="$tracknumber"
-                if [ -n "$tracktotal" ]; then
+                if [ -n "$tracktotal" ] && [ "$tracktotal" != "0" ]; then
                     track="$tracknumber/$tracktotal"
                 fi
             fi
             ;;
         *)
             tracknumber="$track"
-            if [ -n "$tracktotal" ]; then
+            if [ -n "$tracktotal" ] && [ "$tracktotal" != "0" ]; then
                 track="$track/$tracktotal"
             fi
             ;;
     esac
+    if [ "$tracktotal" = "0" ]; then
+        tracktotal=
+    fi
+    if [ "$tracknumber" = "0" ]; then
+        tracknumber=
+    fi
 
     # Ensure that disc, discnumber, and disctotal are set if possible
     if [ -z "$disctotal" ] && [ -n "$totaldiscs" ]; then
@@ -148,22 +158,29 @@ eval_metadata() {
         */*)
             discnumber="${disc%/*}"
             disctotal="${disc##*/}"
+            if [ "$disctotal" = "0" ]; then
+                disctotal=
+                disc="$discnumber"
+            fi
             ;;
         '')
             if [ -n "$discnumber" ]; then
                 disc="$discnumber"
-                if [ -n "$disctotal" ]; then
+                if [ -n "$disctotal" ] && [ "$disctotal" != "0" ]; then
                     disc="$discnumber/$disctotal"
                 fi
             fi
             ;;
         *)
             discnumber="$disc"
-            if [ -n "$disctotal" ]; then
+            if [ -n "$disctotal" ] && [ "$disctotal" != "0" ]; then
                 disc="$disc/$disctotal"
             fi
             ;;
     esac
+    if [ "$disctotal" = "0" ]; then
+        disctotal=
+    fi
 }
 
 eval_common_metadata() {
