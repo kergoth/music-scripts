@@ -135,9 +135,9 @@ for source_dir; do
         newalbumdir="$albumdir"
 
         grep -E "^$(re_escape "$albumdir")$TAB" "$audiofiles" 2>/dev/null \
-            | cut -d"$TAB" -f2 >"$tmpdir/albumfiles"
+            | cut -d"$TAB" -f2 >"$tmpdir/albumfiles" || :
         grep "^$albumdir$TAB" "$audiofiles" 2>/dev/null \
-            | cut -d"$TAB" -f2 >>"$tmpdir/albumfiles"
+            | cut -d"$TAB" -f2 >>"$tmpdir/albumfiles" || :
         sort -u "$tmpdir/albumfiles" >"$tmpdir/albumfiles.new" \
             && mv "$tmpdir/albumfiles.new" "$tmpdir/albumfiles"
         >"$tmpdir/filestomove"
@@ -211,7 +211,7 @@ for source_dir; do
         done <"$tmpdir/filestomove"
 
         if [ $dry_run -eq 0 ]; then
-            remove-empty-dirs "$albumdir" >/dev/null 2>&1
+            remove-empty-dirs "$albumdir" >/dev/null 2>&1 || :
         fi
     done <"$tmpdir/albumdirs"
 
