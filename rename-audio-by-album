@@ -1,19 +1,10 @@
 #!/bin/bash
-# shellcheck disable=SC2154
+# shellcheck disable=SC2154,SC2188
 
 # shellcheck source=./common-music.sh
 . "$(dirname "$0")/common-music.sh"
 # shellcheck source=./trap.sh
 . "$(dirname "$0")/trap.sh"
-
-case "$BASH_VERSION" in
-    '')
-        trap 'rm -f $cleanfiles; on_exit' EXIT
-        ;;
-    *)
-        trap 'rm -f $cleanfiles' EXIT
-        ;;
-esac
 
 PATH="$(cd "$(dirname "$0")" && pwd):$PATH"
 
@@ -31,7 +22,6 @@ Options:
 END
     exit 2
 }
-
 
 alias link='ln -fv'
 
@@ -68,10 +58,19 @@ if [ $# -eq 0 ]; then
     usage
 fi
 
-audiofiles="$(mktemp -t "${0##*/}.XXXXXX")" || exit 1
-otherfiles="$(mktemp -t "${0##*/}.XXXXXX")" || exit 1
-cleanfiles="$audiofiles"
-trap 'rm -f "$audiofiles"' INT TERM
+tmpdir=$(mktemp -d -t "${0##*/}.XXXX") || exit $?
+case "$BASH_VERSION" in
+    '')
+        trap 'rm -rf "$tmpdir"; on_exit' EXIT
+        ;;
+    *)
+        trap 'rm -rf "$tmpdir"' EXIT
+        ;;
+esac
+trap 'rm -rf "$tmpdir"; pkill -P $$; wait; trap - INT; kill -INT 0' INT
+trap 'rm -rf "$tmpdir"; pkill -P $$; wait; trap - TERM; kill 0' TERM
+
+audiofiles="$tmpdir/audiofiles"
 
 get_newfn() {
     (
@@ -85,6 +84,32 @@ get_newfn() {
     )
 }
 
+re_escape() {
+    python3 -c 'import re,sys; print("\n".join(re.escape(a) for a in sys.argv[1:]))' "$@"
+}
+
+is_macos=0
+# shellcheck disable=SC2032
+case "$OSTYPE" in
+    darwin*)
+        is_macos=1
+        ;;
+esac
+
+rename() {
+    if [ $is_macos -eq 1 ]; then
+        lower_one="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
+        lower_two="$(echo "$2" | tr '[:upper:]' '[:lower:]')"
+        if [ "$lower_one" = "$lower_two" ]; then
+            # Only difference between the two is case, and most filesystems on
+            # macOS are case-insensitive, so skip the pointless mv
+            return
+        fi
+    fi
+    mv -v "$1" "$2"
+}
+
+TAB=$(printf '\t')
 preparebar 40
 for source_dir; do
     if [ ! -e "$source_dir" ]; then
@@ -96,57 +121,98 @@ for source_dir; do
     else
         soutdir="$source_dir"
     fi
-    music_find "$source_dir" >"$audiofiles"
-    filecount=$(wc -l <"$audiofiles" | xargs)
+    music_find "$source_dir" | sed -e "s#\\(.*\\)/\\(.*\\)#\\1${TAB}\\2#" >"$audiofiles"
+    cut -d"$TAB" -f1 "$audiofiles" | sort -u >"$tmpdir/albumdirs"
+    >"$tmpdir/explicit_albums"
+    filecount=$(wc -l <"$tmpdir/albumdirs" | xargs)
     curcount=0
-    while read -r fn; do
+
+    # shellcheck disable=SC2002
+    while read -r albumdir; do
         curcount=$((curcount + 1))
         clearbar
         progressbar "$curcount" "$filecount" "${source_dir##*/}" "$curcount/$filecount    "
-        newfn="$(get_newfn "$fn" "$soutdir")" || :
-        if [ -z "$newfn" ]; then
-            echo >&2 "Error: unable to determine new filename for $fn, skipping"
-            continue
-        elif [ "$(echo "$newfn" | wc -l | xargs)" -ne 1 ]; then
-            echo >&2 "Error: invalid new fn $newfn for $fn, skipping"
-            continue
-        elif [ "$fn" != "$newfn" ]; then
-            if [ -e "$newfn" ] && ! [ "$fn" -ef "$newfn" ]; then
+        newalbumdir="$albumdir"
+
+        grep -E "^$(re_escape "$albumdir")$TAB" "$audiofiles" 2>/dev/null \
+            | cut -d"$TAB" -f2 >"$tmpdir/albumfiles"
+        grep "^$albumdir$TAB" "$audiofiles" 2>/dev/null \
+            | cut -d"$TAB" -f2 >"$tmpdir/albumfiles"
+        sort -u "$tmpdir/albumfiles" >"$tmpdir/albumfiles.new" \
+            && mv "$tmpdir/albumfiles.new" "$tmpdir/albumfiles"
+
+        while read -r basefn; do
+            fn="$albumdir/$basefn"
+
+            eval_common_metadata "$fn"
+            if [ -z "$artist" ] && [ -z "$title" ] && [ -z "$tracknumber" ]; then
+                # shellcheck disable=SC2031
+                echo >&2 "Error: no useful tags for $fn, skipping"
+                continue
+            fi
+
+            newfn="$(get_new_filename ${separate_discs:+-d} ${suffix_the:+-t} "$fn" "$soutdir")"
+            if [ -z "$newfn" ]; then
+                echo >&2 "Error: unable to determine new filename for $fn, skipping"
+                continue
+            elif [ "$(echo "$newfn" | wc -l | xargs)" -ne 1 ]; then
+                echo >&2 "Error: invalid new fn $newfn for $fn, skipping"
+                continue
+            fi
+
+            newalbumdir="$(dirname "$newfn")"
+            if [ "$itunesadvisory" = 1 ]; then
+                newfn="${newfn%.*} (Explicit).${newfn##*.}"
+                echo "$newalbumdir" >>"$tmpdir/explicit_albums"
+            elif [ "$itunesadvisory" = 2 ]; then
+                newfn="${newfn%.*} (Clean).${newfn##*.}"
+            fi
+
+            printf '%s\t%s\n' "$fn" "$newfn" >>"$tmpdir/filestomove"
+        done <"$tmpdir/albumfiles"
+
+        if grep -qx "$newalbumdir" "$tmpdir/explicit_albums"; then
+            newalbumdir="$newalbumdir (Explicit)"
+        fi
+
+        if [ "$albumdir" != "$newalbumdir" ]; then
+            mkdir -p "$newalbumdir"
+            # Non-audio files
+            nonmusic_find "$albumdir" \
+                | while read -r efn; do
+                    newefn="$newalbumdir/${efn##*/}"
+                    if [ $dry_run -eq 1 ]; then
+                        echo "$efn -> $newefn"
+                    else
+                        rename "$efn" "$newefn"
+                    fi
+                done
+        fi
+
+        while IFS="$TAB" read -r fn newfn; do
+            newalbumdir="$(dirname "$newfn")"
+            if grep -qx "$newalbumdir" "$tmpdir/explicit_albums"; then
+                newalbumdir="$newalbumdir (Explicit)"
+                newfn="$newalbumdir/${fn##*/}"
+            fi
+            if [ "$fn" = "$newfn" ]; then
+                # Nothing to do
+                continue
+            elif [ -e "$newfn" ] && ! [ "$fn" -ef "$newfn" ]; then
                 echo >&2 "Error: $newfn already exists, cannot move $fn"
                 continue
             fi
-            newfndir="$(dirname "$newfn")"
             if [ $dry_run -eq 1 ]; then
                 echo "$fn -> $newfn"
             else
-                fn_lower="$(echo "$fn" | tr '[:upper:]' '[:lower:]')"
-                newfn_lower="$(echo "$newfn" | tr '[:upper:]' '[:lower:]')"
-                if [ "$fn_lower" != "$newfn_lower" ]; then
-                    mkdir -p "$newfndir"
-                    mv -v "$fn" "$newfn"
-                fi
+                rename "$fn" "$newfn"
             fi
+        done <"$tmpdir/filestomove"
 
-            oldfndir="$(dirname "$fn")"
-            if ! echo "$oldfndir" | grep -qix "$newfndir"; then
-                # Non-audio files
-                nonmusic_find "$oldfndir" \
-                    | while read -r efn; do
-                        newefn="$newfndir/${efn##*/}"
-                        if ! grep -qFx "$efn" "$otherfiles" && ! [ -e "$newefn" ]; then
-                            echo "$efn" >>"$otherfiles"
-                            if [ $dry_run -eq 1 ]; then
-                                echo "$efn -> $newefn"
-                            else
-                                mv -v "$efn" "$newefn"
-                            fi
-                        fi
-                    done
-            fi
+        if [ $dry_run -eq 0 ]; then
+            remove-empty-dirs "$albumdir" >/dev/null 2>&1
         fi
-    done <"$audiofiles"
-    if [ $dry_run -eq 1 ]; then
-        remove-empty-dirs "$source_dir" >/dev/null 2>&1
-    fi
+    done <"$tmpdir/albumdirs"
+
     echo
 done
