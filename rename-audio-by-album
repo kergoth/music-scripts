@@ -75,7 +75,7 @@ get_newfn() {
         eval_common_metadata "$1"
         if [ -z "$artist" ] && [ -z "$title" ] && [ -z "$tracknumber" ]; then
             echo >&2 "Error: no useful tags for $fn, skipping"
-            continue
+            return 1
         fi
         get_new_filename ${separate_discs:+-d} ${suffix_the:+-t} "$1" "$2"
     )
@@ -99,12 +99,12 @@ for source_dir; do
         curcount=$((curcount + 1))
         clearbar
         progressbar "$curcount" "$filecount" "${source_dir##*/}" "$curcount/$filecount    "
-        newfn="$(get_newfn "$fn" "$soutdir")"
-        if [ "$(echo "$newfn" | wc -l | xargs)" -ne 1 ]; then
-            echo >&2 "Error: invalid new fn $newfn for $fn, skipping"
-            continue
-        elif [ -z "$newfn" ]; then
+        newfn="$(get_newfn "$fn" "$soutdir")" || :
+        if [ -z "$newfn" ]; then
             echo >&2 "Error: unable to determine new filename for $fn, skipping"
+            continue
+        elif [ "$(echo "$newfn" | wc -l | xargs)" -ne 1 ]; then
+            echo >&2 "Error: invalid new fn $newfn for $fn, skipping"
             continue
         elif [ "$fn" != "$newfn" ]; then
             if [ -e "$newfn" ] && ! [ "$fn" -ef "$newfn" ]; then
