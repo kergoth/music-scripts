@@ -194,7 +194,7 @@ get_new_filename() {
     if [ -n "$album" ]; then
         albumdir="$album"
     else
-        albumdir="[unknown]"
+        albumdir="[non-album tracks]"
     fi
 
     fn_tracknumber="$tracknumber"
