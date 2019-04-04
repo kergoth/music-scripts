@@ -257,7 +257,7 @@ get_new_filename() {
         if [ -n "$tracknumber" ]; then
             title="Track $tracknumber"
         else
-            title=Unknown
+            title="[unknown]"
         fi
     fi
 
