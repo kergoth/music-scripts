@@ -137,9 +137,10 @@ for source_dir; do
         grep -E "^$(re_escape "$albumdir")$TAB" "$audiofiles" 2>/dev/null \
             | cut -d"$TAB" -f2 >"$tmpdir/albumfiles"
         grep "^$albumdir$TAB" "$audiofiles" 2>/dev/null \
-            | cut -d"$TAB" -f2 >"$tmpdir/albumfiles"
+            | cut -d"$TAB" -f2 >>"$tmpdir/albumfiles"
         sort -u "$tmpdir/albumfiles" >"$tmpdir/albumfiles.new" \
             && mv "$tmpdir/albumfiles.new" "$tmpdir/albumfiles"
+        >"$tmpdir/filestomove"
 
         while read -r basefn; do
             fn="$albumdir/$basefn"
@@ -193,7 +194,7 @@ for source_dir; do
             newalbumdir="$(dirname "$newfn")"
             if grep -qx "$newalbumdir" "$tmpdir/explicit_albums"; then
                 newalbumdir="$newalbumdir (Explicit)"
-                newfn="$newalbumdir/${fn##*/}"
+                newfn="$newalbumdir/${newfn##*/}"
             fi
             if [ "$fn" = "$newfn" ]; then
                 # Nothing to do
