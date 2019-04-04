@@ -70,6 +70,17 @@ otherfiles="$(mktemp -t "${0##*/}.XXXXXX")" || exit 1
 cleanfiles="$audiofiles"
 trap 'rm -f "$audiofiles"' INT TERM
 
+get_newfn() {
+    (
+        eval_common_metadata "$1"
+        if [ -z "$artist" ] && [ -z "$title" ] && [ -z "$tracknumber" ]; then
+            echo >&2 "Error: no useful tags for $fn, skipping"
+            continue
+        fi
+        get_new_filename ${separate_discs:+-d} ${suffix_the:+-t} "$1" "$2"
+    )
+}
+
 preparebar 40
 for source_dir; do
     if [ ! -e "$source_dir" ]; then
@@ -88,21 +99,14 @@ for source_dir; do
         curcount=$((curcount + 1))
         clearbar
         progressbar "$curcount" "$filecount" "${source_dir##*/}" "$curcount/$filecount    "
-        eval_common_metadata "$fn"
-        if [ -z "$artist" ] && [ -z "$title" ] && [ -z "$tracknumber" ]; then
-            echo >&2 "Error: no useful tags for $fn, skipping"
-            continue
-        fi
-        newfn="$(get_new_filename ${separate_discs:+-d} ${suffix_the:+-t} "$fn" "$soutdir")"
-        if [ $(echo "$newfn" | wc -l) -ne 1 ]; then
+        newfn="$(get_newfn "$fn" "$soutdir")"
+        if [ "$(echo "$newfn" | wc -l | xargs)" -ne 1 ]; then
             echo >&2 "Error: invalid new fn $newfn for $fn, skipping"
             continue
-        fi
-        if [ -z "$newfn" ]; then
+        elif [ -z "$newfn" ]; then
             echo >&2 "Error: unable to determine new filename for $fn, skipping"
             continue
-        fi
-        if [ "$fn" != "$newfn" ]; then
+        elif [ "$fn" != "$newfn" ]; then
             if [ -e "$newfn" ] && ! [ "$fn" -ef "$newfn" ]; then
                 echo >&2 "Error: $newfn already exists, cannot move $fn"
                 continue
