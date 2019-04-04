@@ -1,6 +1,9 @@
 #!/bin/bash
+# shellcheck disable=SC2154
 
+# shellcheck source=./common-music.sh
 . "$(dirname "$0")/common-music.sh"
+# shellcheck source=./trap.sh
 . "$(dirname "$0")/trap.sh"
 
 case "$BASH_VERSION" in
@@ -74,6 +77,7 @@ get_newfn() {
     (
         eval_common_metadata "$1"
         if [ -z "$artist" ] && [ -z "$title" ] && [ -z "$tracknumber" ]; then
+            # shellcheck disable=SC2031
             echo >&2 "Error: no useful tags for $fn, skipping"
             return 1
         fi
