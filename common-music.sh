@@ -8,7 +8,7 @@ md_vars="$tracknum_vars $discnum_vars \
          media tmed \
          musicbrainz_album_id \
          artist album_artist artists \
-         title album compilation discsubtitle"
+         title album compilation discsubtitle setsubtitle"
 known_releasetypes="album compilation ep live other remix \
                     single soundtrack spokenword"
 
