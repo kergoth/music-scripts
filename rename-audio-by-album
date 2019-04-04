@@ -172,7 +172,7 @@ for source_dir; do
             printf '%s\t%s\n' "$fn" "$newfn" >>"$tmpdir/filestomove"
         done <"$tmpdir/albumfiles"
 
-        if grep -qx "$newalbumdir" "$tmpdir/explicit_albums"; then
+        if grep -Fqx "$newalbumdir" "$tmpdir/explicit_albums"; then
             newalbumdir="$newalbumdir (Explicit)"
         fi
 
@@ -192,7 +192,7 @@ for source_dir; do
 
         while IFS="$TAB" read -r fn newfn; do
             newalbumdir="$(dirname "$newfn")"
-            if grep -qx "$newalbumdir" "$tmpdir/explicit_albums"; then
+            if grep -Fqx "$newalbumdir" "$tmpdir/explicit_albums"; then
                 newalbumdir="$newalbumdir (Explicit)"
                 newfn="$newalbumdir/${newfn##*/}"
             fi
