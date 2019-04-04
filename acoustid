@@ -1,0 +1,92 @@
+#!/bin/sh
+
+# shellcheck source=./common-music.sh
+. "$(dirname "$0")/common-music.sh"
+
+trap 'kill $$' INT
+
+usage() {
+    cat >&2 <<END
+${0##*/} [options]
+
+Options:
+  -f Fingerprint only, not acoustid_id.
+  -k Continue as much as possible. Also print an empty line for files without
+     an id available.
+  -v Verbose. Include filename as well as id.
+  -h Show this help page
+END
+exit 2
+}
+
+fingerprint_only=0
+verbose=0
+continue=0
+while getopts fkvh opt; do
+    case "$opt" in
+        f)
+            fingerprint_only=1
+            ;;
+        k)
+            continue=1
+            ;;
+        v)
+            verbose=1
+            ;;
+        \? | h)
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+get_acoustids() {
+    ffprobe -v quiet -of flat=s=_ -show_entries format_tags "$1" \
+        | cut -d_ -f3- \
+        | grep -Ei "^acoustid|acoustid_(id|fingerprint)'=" | while IFS='=' read -r key value; do
+            printf '%s=%s\n' "$(echo "$key" | tr '[:upper:]' '[:lower:]')" "$value"
+        done
+}
+
+# FIXME: look up the fingerprint using the id to handle the case where one
+# file has the acoustid_id tag but the other doesn't, yet they share the same
+# fingerprint
+ret=0
+for filename; do
+    id=
+    acoustid=
+    acoustid_id=
+    acoustid_fingerprint=
+    eval "$(get_acoustids "$filename")"
+    # acoustid_id="$(get_acoustid_id "$filename")"
+    # eval_metadata "$filename" acoustid_id
+    # eval_common_metadata "$filename" acoustid acoustid_id acoustid_fingerprint
+    if [ $fingerprint_only -eq 0 ]; then
+        if [ -n "$acoustid_id" ]; then
+            id=$acoustid_id
+        elif [ -n "$acoustid" ]; then
+            id=$acoustid
+        fi
+    fi
+    if [ -z "$id" ]; then
+        if [ -n "$acoustid_fingerprint" ]; then
+            id=$acoustid_fingerprint
+        else
+            acoustid_fingerprint="$(fpcalc -plain "$filename")"
+            if [ -z "$acoustid_fingerprint" ] && [ $continue -eq 0 ]; then
+                echo >&2 "Error getting acoustic id or fingerprint for $filename"
+                exit 1
+            else
+                echo >&2 "Warning: failed to get acoustic id or fingerprint for $filename"
+                ret=1
+            fi
+            id="$acoustid_fingerprint"
+        fi
+    fi
+    if [ $verbose -eq 1 ]; then
+        printf '%s\t%s\n' "$id" "$filename"
+    else
+        echo "$id"
+    fi
+done
+exit "$ret"
