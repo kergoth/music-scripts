@@ -41,6 +41,21 @@ get_metadata() {
             get_metadata_exif "$fn" "$@"
             return $?
             ;;
+        *.m4a)
+            if echo "$@" | grep -qw itunesadvisory; then
+                (
+                    eval "$(get_metadata_exif "$fn" rating)"
+                    case "$rating" in
+                        Clean)
+                            echo 'itunesadvisory="2"'
+                            ;;
+                        Explicit)
+                            echo 'itunesadvisory="1"'
+                            ;;
+                    esac
+                )
+            fi
+            ;;
     esac
 
     pat="$(echo "$@" | sed -e 's/  */ /g')"
