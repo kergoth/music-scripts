@@ -2,6 +2,7 @@
 tracknum_vars="track tracknumber tracktotal totaltracks"
 discnum_vars="disc discnumber disctotal totaldiscs"
 md_vars="$tracknum_vars $discnum_vars \
+         itunesadvisory rtng \
          releasetype \
          genre albumgenre \
          year originalyear \
@@ -39,7 +40,8 @@ get_metadata() {
     esac
 
     pat="$(echo "$@" | sed -e 's/  */ /g')"
-    ffprobe -v quiet -show_format -show_streams -of flat=s=_ -show_entries format_tags "$fn" \
+    # ffprobe -v quiet -show_format -show_streams -of flat=s=_ -show_entries format_tags "$fn"
+    ffprobe -v quiet -show_format -of flat=s=_ -show_entries format_tags "$fn" \
         | cut -d_ -f2- \
         | sed -e 's/^tags_//' \
         | while IFS="=" read -r key value; do
