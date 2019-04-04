@@ -198,7 +198,7 @@ get_new_filename() {
     fi
 
     fn_tracknumber="$tracknumber"
-    if [ "$disctotal" != 1 ] \
+    if ([ -n "$disctotal" ] && [ "$disctotal" != 1 ]) \
         || ([ -n "$discnumber" ] && [ "$discnumber" -gt 1 ]); then
         if [ -z "$discsubtitle" ]; then
             discsubtitle="$setsubtitle"
