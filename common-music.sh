@@ -98,6 +98,7 @@ eval_metadata() {
     fn="$1"
     shift
 
+    unset "$@"
     eval "$(get_metadata "$fn" "$@")"
     if [ -z "$title" ] && [ -z "$track" ] && [ -z "$tracknumber" ]; then
         eval "$(get_metadata_exif "$fn" "$@")"
@@ -171,7 +172,6 @@ eval_common_metadata() {
     if [ $# -eq 0 ]; then
         set -- $md_vars
     fi
-    unset "$@"
     eval_metadata "$fn" "$@"
 }
 
