@@ -1,3 +1,5 @@
+# shellcheck disable=SC2154,SC2001,SC2119,SC2120
+
 # Commonly used metadata variables
 tracknum_vars="track tracknumber tracktotal totaltracks"
 discnum_vars="disc discnumber disctotal totaldiscs"
@@ -10,6 +12,7 @@ md_vars="$tracknum_vars $discnum_vars \
          musicbrainz_album_id \
          artist album_artist artists \
          title album compilation discsubtitle setsubtitle"
+# shellcheck disable=SC2034
 known_releasetypes="album compilation ep live other remix \
                     single soundtrack spokenword"
 
@@ -18,8 +21,9 @@ die() {
     shift
     fmt="$1"
     shift
-    printf >&2 "Error: $fmt\n" "$@"
-    exit $ret
+    # shellcheck disable=SC2059
+    printf >&2 "Error: $fmt\\n" "$@"
+    exit "$ret"
 }
 
 fn_sanitize() {
@@ -77,6 +81,7 @@ get_metadata_exif() {
                     key="Album_Artist"
                     ;;
             esac
+            # shellcheck disable=SC1003
             key="$(printf '%s\n' "$key" | tr ".:/-#=\`" "_______" | tr "[:upper:]" "[:lower:]" | tr -d '\')"
             if [ -n "$pat" ]; then
                 case " $pat " in
@@ -87,6 +92,7 @@ get_metadata_exif() {
                         ;;
                 esac
             fi
+            # shellcheck disable=SC2016
             value="$(printf '%s\n' "$value" | sed -e 's/"/\\"/g; s/\\$//; s/`/\\`/g')"
             printf '%s="%s"\n' "$key" "$value"
         done
@@ -189,6 +195,7 @@ eval_common_metadata() {
     fn="$1"
     shift
     if [ $# -eq 0 ]; then
+        # shellcheck disable=SC2086
         set -- $md_vars
     fi
     eval_metadata "$fn" "$@"
@@ -217,8 +224,8 @@ get_new_filename() {
     fi
 
     fn_tracknumber="$tracknumber"
-    if ([ -n "$disctotal" ] && [ "$disctotal" != 1 ]) \
-        || ([ -n "$discnumber" ] && [ "$discnumber" -gt 1 ]); then
+    if { [ -n "$disctotal" ] && [ "$disctotal" != 1 ]; } \
+        || { [ -n "$discnumber" ] && [ "$discnumber" -gt 1 ]; }; then
         if [ -z "$discsubtitle" ]; then
             discsubtitle="$setsubtitle"
         fi
@@ -249,8 +256,8 @@ get_new_filename() {
         newfn=
     fi
 
-    if ([ -n "$compilation" ] && [ "$compilation" = 1 ]) \
-        || ([ -n "$album_artist" ] && echo "$album_artist" | grep -qi '^various'); then
+    if { [ -n "$compilation" ] && [ "$compilation" = 1 ]; } \
+        || { [ -n "$album_artist" ] && echo "$album_artist" | grep -qi '^various'; }; then
         newfn="$newfn$artist - "
         compilation=1
     fi
@@ -326,7 +333,7 @@ get_album_track_total() {
                         return 0
                     fi
                 fi
-                if [ $total -ge $file_count ]; then
+                if [ "$total" -ge "$file_count" ]; then
                     break
                 fi
             done
@@ -364,7 +371,7 @@ get_album_id() {
     else
         year="$(get_album_year)"
         album_id_string="${album_artist} ${album} ${compilation} ${year} ${tracktotal} ${disctotal}"
-        if which md5sum >/dev/null 2>&1; then
+        if command -v md5sum >/dev/null 2>&1; then
             echo "$album_id_string" | md5
         else
             echo "$album_id_string" | md5
@@ -423,6 +430,7 @@ get_genre() {
     echo "$genre"
 }
 
+# shellcheck disable=SC2183
 preparebar() {
 # $1 - bar length
 # $2 - bar char
@@ -431,6 +439,7 @@ preparebar() {
     barchars=$(printf "%*s" "$1" | tr ' ' "${2:-#}")
 }
 
+# shellcheck disable=SC2183
 setup_clearbar () {
     clearlen="$(tput cols)"
     clearspaces=$(printf "%*s" "$clearlen")
@@ -438,13 +447,13 @@ setup_clearbar () {
 trap 'setup_clearbar' WINCH
 
 clearbar() {
-    printf "\r$clearspaces\r"
+    printf "\\r$clearspaces\\r"
 }
 
 progressbar() {
 # $1 - number (-1 for clearing the bar)
 # $2 - max number
-    if [ $1 -eq -1 ]; then
+    if [ "$1" -eq -1 ]; then
         printf "\r  $barspaces\r"
     else
         barch=$(($1*barlen/$2))
