@@ -238,7 +238,11 @@ get_new_filename() {
     fi
 
     if [ -n "$fn_tracknumber" ]; then
-        newfn="$fn_tracknumber - "
+        if [ "$tracknumber" != 1 ] || [ -z "$tracktotal" ] || [ "$tracktotal" != 1 ]; then
+            newfn="$fn_tracknumber - "
+        else
+            newfn=
+        fi
     else
         newfn=
     fi
