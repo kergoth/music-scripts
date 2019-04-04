@@ -1,4 +1,4 @@
-# shellcheck disable=SC2154,SC2001,SC2119,SC2120
+# shellcheck disable=SC2154,SC2001,SC2119,SC2120,SC2034
 
 # Commonly used metadata variables
 tracknum_vars="track tracknumber tracktotal totaltracks"
@@ -12,7 +12,6 @@ md_vars="$tracknum_vars $discnum_vars \
          musicbrainz_album_id \
          artist album_artist artists \
          title album compilation discsubtitle setsubtitle"
-# shellcheck disable=SC2034
 known_releasetypes="album compilation ep live other remix \
                     single soundtrack spokenword"
 
@@ -300,7 +299,7 @@ get_new_filename() {
     albumdir="$(fn_sanitize "$albumdir" "s/:$//")"
     # Special case. Soundtracks are generally a movie name, which we shouldn't
     # be changing, or it won't line up with the movie name anymore.
-    genre="$(get_genre)"
+    genre="$(get_genre "$fn")"
     if [ $suffix_the -eq 1 ] && [ "$genre" != Soundtrack ]; then
         albumdir="$(echo "$albumdir" | sed -e 's/^The \(.*\)/\1, The/')"
     fi
@@ -397,52 +396,46 @@ get_album_id() {
 get_genre() {
     if [ -n "$albumgenre" ]; then
         genre="$albumgenre"
-    elif [ -z "$genre" ]; then
-        # shellcheck disable=SC2016
-        genre="$(exiftool -qm -AlbumGenre -p '$AlbumGenre' "$1" 2>/dev/null | xargs)"
-        if [ -z "$genre" ]; then
-            # shellcheck disable=SC2016
-            genre="$(exiftool -qm -Genre -p '$Genre' "$1" 2>/dev/null | xargs)"
-        fi
     fi
-
-    # Sanitize / Improve consistency. Better plan: fix the tags
-    lower_genre="$(echo "$genre" | tr '[:upper:]' '[:lower:]')"
-    case "$lower_genre" in
-        none | '' | miscellaneous | other | unclassifiable | hsh)
-            genre=
-            ;;
-        soundtracks)
-            genre=Soundtrack
-            ;;
-        videogame | video\ game* | vgm | game*)
-            genre=Game
-            ;;
-        dance\ \&\ dj)
-            genre=Dance
-            ;;
-        heavy\ metal)
-            genre=Metal
-            ;;
-        holiday)
-            genre=Christmas
-            ;;
-    esac
-    base="$(basename "$(dirname "$1")")"
-    if [ "$genre" != Game ] \
-        && [ "$genre" != Soundtrack ] \
-        && ([ -z "$2" ] || ! echo "$base" | grep -qEx "$2"); then
+    if [ -n "$genre" ]; then
+        # Sanitize / Improve consistency. Better plan: fix the tags
+        lower_genre="$(echo "$genre" | tr '[:upper:]' '[:lower:]')"
+        case "$lower_genre" in
+            none | '' | miscellaneous | other | unclassifiable | hsh)
+                genre=
+                ;;
+            soundtracks)
+                genre=Soundtrack
+                ;;
+            videogame | video\ game* | vgm | game*)
+                genre=Game
+                ;;
+            dance\ \&\ dj)
+                genre=Dance
+                ;;
+            heavy\ metal)
+                genre=Metal
+                ;;
+            holiday)
+                genre=Christmas
+                ;;
+        esac
+        base="$(basename "$(dirname "$1")")"
+        if [ "$genre" != Game ] \
+            && [ "$genre" != Soundtrack ] \
+            && ([ -z "$2" ] || ! echo "$base" | grep -qEx "$2"); then
         if echo "$base" | grep -qi soundtrack \
             || echo "$base" | grep -qiw ost; then
-            genre=Soundtrack
-        elif echo "$releasetype" | tr '/,' '  ' | grep -qwi soundtrack; then
-            echo >&2 "Warning: $1 has a soundtrack releasetype, but no Soundtrack genre"
-        fi
+        genre=Soundtrack
+    elif echo "$releasetype" | tr '/,' '  ' | grep -qwi soundtrack; then
+        echo >&2 "Warning: $1 has a soundtrack releasetype, but no Soundtrack genre"
     fi
-    if [ -z "$genre" ]; then
-        genre=Unknown\ Genre
-    fi
-    echo "$genre"
+fi
+fi
+if [ -z "$genre" ]; then
+    genre=Unknown\ Genre
+fi
+echo "$genre"
 }
 
 # shellcheck disable=SC2183
