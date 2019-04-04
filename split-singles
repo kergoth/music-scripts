@@ -25,7 +25,9 @@ check_dest() {
     return 0
 }
 
+# shellcheck source=./common-music.sh
 . "$(dirname "$0")/common-music.sh"
+# shellcheck source=./trap.sh
 . "$(dirname "$0")/trap.sh"
 
 tmpdir="$(mktemp -d -t "${0##*/}.XXXXXX")" || exit 1
@@ -138,9 +140,9 @@ if [ $# -eq 0 ]; then
     set -- .
 fi
 
-linkargs=
+linkarg=
 if [ $hard_link_individual -eq 0 ]; then
-    linkargs="$linkargs -sr"
+    linkarg=-sr
 elif [ $individual -eq 0 ]; then
     echo >&2 "Warning: -H has no effect without -i"
 fi
@@ -154,13 +156,13 @@ if [ $move -eq 1 ]; then
         mv "$@"
     }
 else
-    if which gln >/dev/null 2>&1; then
+    if command -v gln >/dev/null 2>&1; then
         link() {
             check_dest "$@" || return $?
             if [ -h "$2" ]; then
                 rm -f "$2"
             fi
-            gln $linkargs "$@"
+            gln "$linkarg" "$@"
         }
     else
         link() {
@@ -168,7 +170,7 @@ else
             if [ -h "$2" ]; then
                 rm -f "$2"
             fi
-            ln $linkargs "$@"
+            ln "$linkarg" "$@"
         }
     fi
 fi
