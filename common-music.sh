@@ -243,6 +243,13 @@ get_new_filename() {
         || { [ -n "$discnumber" ] && [ "$discnumber" -gt 1 ]; }; then
         if [ -z "$discsubtitle" ]; then
             discsubtitle="$setsubtitle"
+            case "$setsubtitle" in
+                */*)
+                    if [ "${setsubtitle%/*}" = "${setsubtitle#*/}" ]; then
+                        discsubtitle="${setsubtitle%/*}"
+                    fi
+                    ;;
+            esac
         fi
         if [ -n "$discnumber" ]; then
             if [ $separate_disc_folders -eq 0 ]; then
