@@ -42,20 +42,25 @@ while getopts ep:h opt; do
 done
 shift $((OPTIND - 1))
 
+list_playlists() {
+    if [ $# -eq 0 ]; then
+        find "$playlist_root" -type f
+    else
+        for arg; do
+            echo "$arg"
+        done
+    fi
+}
+
 if [ $# -eq 0 ]; then
     playlist_root=../Playlists
-    OIFS="$IFS"
-    IFS="$(printf '\n')"
-    # shellcheck disable=SC2046
-    set -- $(find "$playlist_root" -type f)
-    IFS="$OIFS"
 else
     playlist_root=
 fi
 
 cd "$scriptdir"
 mkdir -p "$playlistdir"
-for playlist; do
+list_playlists "$@" | while read -r playlist; do
     if [ -n "$playlist_root" ]; then
         dir="$(dirname "${playlist#$playlist_root/}")"
     else
