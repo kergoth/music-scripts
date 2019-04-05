@@ -206,6 +206,7 @@ for source_dir; do
             if [ $dry_run -eq 1 ]; then
                 echo "$fn -> $newfn"
             else
+                mkdir -p "${newfn%/*}"
                 rename "$fn" "$newfn"
             fi
         done <"$tmpdir/filestomove"
