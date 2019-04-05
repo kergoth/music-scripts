@@ -102,6 +102,11 @@ sort_playlist() {
 process_arguments "$@"
 shift $((OPTIND - 1))
 
+tmpfile=$(mktemp -t "${0##*/}.XXXX")
+trap 'rm -f "$tmpfile"' EXIT
+trap 'rm -f "$tmpfile"; trap - INT; kill -INT $$' INT
+trap 'rm -f "$tmpfile"; trap - TERM; kill -TERM $$' TERM
+
 for playlist; do
     if [ $verbose -eq 1 ]; then
         echo >&2 "Processing $playlist"
@@ -117,11 +122,17 @@ for playlist; do
     if [ "$extm3u" -eq 1 ]; then
         echo "#EXTM3U" >"$newplaylist"
     fi
-    rockuefort list "$playlist" \
-        | sort_playlist \
-        | extm3u_fragments \
-        | sed -e "/^#/!s#^${library_root:+$library_root/}#${playlist_relpath:+$playlist_relpath/}#; ${winpath:+s#/#\\\\#g};" \
-            >>"$newplaylist"
+
+    # shellcheck disable=SC2002
+    cat "$playlist" \
+        | while read -r line; do
+            echo "$line" >"$tmpfile"
+            rockuefort list "$tmpfile" \
+                | sort_playlist
+        done \
+            | extm3u_fragments \
+            | sed -e "/^#/!s#^${library_root:+$library_root/}#${playlist_relpath:+$playlist_relpath/}#; ${winpath:+s#/#\\\\#g};" \
+                >>"$newplaylist"
 
     if [ "$destdir" != "-" ] && ! [ -s "$newplaylist" ]; then
         rm -f "$newplaylist"
