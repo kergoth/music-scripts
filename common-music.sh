@@ -231,13 +231,14 @@ get_new_filename() {
 
     fn="$1"
     source_dir="$2"
-    if [ -n "$album" ]; then
+    if [ -n "$album" ] && [ "$album" != "[non-album tracks]" ]; then
         albumdir="$album"
+        fn_tracknumber="$tracknumber"
     else
         albumdir="[non-album tracks]"
+        fn_tracknumber=
     fi
 
-    fn_tracknumber="$tracknumber"
     if { [ -n "$disctotal" ] && [ "$disctotal" != 1 ]; } \
         || { [ -n "$discnumber" ] && [ "$discnumber" -gt 1 ]; }; then
         if [ -z "$discsubtitle" ]; then
