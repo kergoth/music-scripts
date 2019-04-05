@@ -11,4 +11,4 @@ rm -rf ./*/
 split-singles -id ../By\ Source/*
 gcp -al ../Manual\ Additions/* .
 rockuefort scan
-env "$scriptdir/update-playlists-only"
+env "$scriptdir/update-playlists"
