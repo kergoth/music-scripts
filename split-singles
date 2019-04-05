@@ -327,7 +327,8 @@ for library_dir; do
             fi
             dest="$ddestdir/$dest"
 
-            if [ $individual -eq 1 ]; then
+            dirname="$(basename "$dest")"
+            if [ $individual -eq 1 ] || [ "$dirname" = "[non-album tracks]" ]; then
                 if [ $dry_run -eq 0 ]; then
                     mkdir -p "$dest"
                 fi
