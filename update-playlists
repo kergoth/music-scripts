@@ -80,3 +80,7 @@ list_playlists "$@" | while read -r playlist; do
         rmdir "$destdir" 2>/dev/null || :
     fi
 done
+
+if [ -e "$playlist_root/Random Single Tracks" ]; then
+    find Single\ Tracks -type l | sed -e 's#^#../#; s#/#\\#g' | sort -R >"$playlistdir/Random Single Tracks.m3u8"
+fi
