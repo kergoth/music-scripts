@@ -1,7 +1,27 @@
 #!/bin/sh
-# shellcheck disable=SC2154
+# shellcheck disable=SC2154,SC1090,SC2016,SC2140
 
 export LC_ALL=en_US.utf-8
+
+abspath () {
+    _path="$1"
+    if [ -n "${_path##/*}" ]; then
+        _path="${2:-$PWD}/$1"
+    fi
+    echo "$_path"
+}
+
+abs_readlink() {
+    for arg; do
+        if [ -h "$arg" ]; then
+            abspath "$(readlink "$arg")" "$(dirname "$arg")"
+        else
+            abspath "$arg"
+        fi
+    done
+}
+
+. "$(dirname "$(abs_readlink "$0")")/common-music.sh"
 
 set -e
 
@@ -86,4 +106,29 @@ if [ -e "$playlist_root/Random Single Tracks" ]; then
     find Single\ Tracks -type l \
         | sed -e 's#^#../#; s#/#\\#g' \
         | sort -R >"$playlistdir/Random Single Tracks.m3u8"
+fi
+
+if [ -e "$playlist_root/By Source" ]; then
+    echo >&2 "Processing By Source playlists"
+    TAB="$(printf '\t')"
+    if command -v greadlink >/dev/null 2>&1; then
+        readlink=greadlink
+    else
+        readlink=readlink
+    fi
+
+    mkdir -p "$playlistdir/By Source"
+    rm -f "$playlistdir/By Source"/*
+    music_find . \
+        | sed -e 's#^\./##' \
+        | xargs-paste "$readlink" -f \
+        | while IFS="$TAB" read -r link file; do
+            source="$(echo "$file" | sed -e 's#.*/By Source/##; s#/.*##')"
+            echo "../$link" >>"$playlistdir/By Source/$source.m3u8"
+        done
+
+    for playlist in "$playlistdir/By Source/"*; do
+        sort_tracks "$playlist" | tr '/' "\\" >"$playlist.new" \
+            && mv "$playlist.new" "$playlist"
+    done
 fi
