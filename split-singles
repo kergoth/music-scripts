@@ -332,11 +332,17 @@ for library_dir; do
                 if [ $dry_run -eq 0 ]; then
                     mkdir -p "$dest"
                 fi
-                while read -r fn; do
-                    if [ $dry_run -eq 0 ]; then
-                        link "$fn" "$dest/${fn##*/}" || continue
+                {
+                    if ! echo "$d" | grep -Eqx "$flattened_dirs" && [ "$dirname" != "[non-album tracks]" ]; then
+                        find "$dir" -iname \*.jpg
                     fi
-                done <"$audiofiles"
+                    cat "$audiofiles"
+                } \
+                    | while read -r fn; do
+                        if [ $dry_run -eq 0 ]; then
+                            link "$fn" "$dest/${fn##*/}" || continue
+                        fi
+                    done
             else
                 dest_parent="$(dirname "$dest")"
                 if [ $dry_run -eq 0 ]; then
