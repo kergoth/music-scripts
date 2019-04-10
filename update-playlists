@@ -3,7 +3,7 @@
 
 export LC_ALL=en_US.utf-8
 
-abspath () {
+abspath() {
     _path="$1"
     if [ -n "${_path##/*}" ]; then
         _path="${2:-$PWD}/$1"
@@ -122,13 +122,10 @@ if [ -e "$playlist_root/By Source" ]; then
     music_find . \
         | sed -e 's#^\./##' \
         | xargs-paste "$readlink" -f \
-        | while IFS="$TAB" read -r link file; do
-            source="$(echo "$file" | sed -e 's#.*/By Source/##; s#/.*##')"
-            echo "../$link" >>"$playlistdir/By Source/$source.m3u8"
+        | sed -n -e 's#\([^'"$TAB"']*'"$TAB"'\)\(.*/By Source\)/\([^/]*\)/\(.*\)#\3'"$TAB"'\1\2/\3/\4#p' \
+        | sort_tracks 3 4 \
+        | cut -d"$TAB" -f1-2 \
+        | while IFS="$TAB" read -r source link; do
+            echo "../$link" | tr '/' "\\" >>"$playlistdir/By Source/$source.m3u8"
         done
-
-    for playlist in "$playlistdir/By Source/"*; do
-        sort_tracks "$playlist" | tr '/' "\\" >"$playlist.new" \
-            && mv "$playlist.new" "$playlist"
-    done
 fi
