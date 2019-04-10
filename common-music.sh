@@ -447,10 +447,12 @@ echo "$genre"
 }
 
 sort_tracks() {
-    sed -e 's#\(.*\)/\([^/]*\)$#\1  \2#' \
-        | gsort -s -t"$TAB" -k1,1 -k2,2n \
+    _field1="${1:-1}"
+    _field2="${2:-2}"
+    sed -e 's#\(.*\)/\([^/]*\)$#\1	\2#' \
+        | gsort -s -t"$TAB" "-k$_field1,$_field1" "-k$_field2,${_field2}n" \
         | uniq \
-        | tr '\t' /
+        | sed -e 's#\(.*\)	\([^	]*\)$#\1/\2#'
 }
 
 # shellcheck disable=SC2183
