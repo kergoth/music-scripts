@@ -93,10 +93,7 @@ sort_playlist() {
     if grep -q '^# nosort' "$playlist"; then
         cat
     else
-        sed -e 's#\(.*\)/\([^/]*\)$#\1	\2#' \
-            | gsort -s -t"$TAB" -k1,1 -k2,2n \
-            | uniq \
-            | tr '\t' /
+        sort_tracks
     fi
 }
 

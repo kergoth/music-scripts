@@ -446,6 +446,13 @@ fi
 echo "$genre"
 }
 
+sort_tracks() {
+    sed -e 's#\(.*\)/\([^/]*\)$#\1  \2#' \
+        | gsort -s -t"$TAB" -k1,1 -k2,2n \
+        | uniq \
+        | tr '\t' /
+}
+
 # shellcheck disable=SC2183
 preparebar() {
 # $1 - bar length
