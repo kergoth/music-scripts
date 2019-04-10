@@ -125,7 +125,8 @@ if [ -e "$playlist_root/By Source" ]; then
         | sed -n -e 's#\([^'"$TAB"']*'"$TAB"'\)\(.*/By Source\)/\([^/]*\)/\(.*\)#\3'"$TAB"'\1\2/\3/\4#p' \
         | sort_tracks 3 4 \
         | cut -d"$TAB" -f1-2 \
+        | sed -e "s#$TAB#$TAB../../#; s#/#\\\\#g" \
         | while IFS="$TAB" read -r source link; do
-            echo "../../$link" | tr '/' "\\" >>"$playlistdir/By Source/$source.m3u8"
+            printf '%s\n' "$link" >>"$playlistdir/By Source/$source.m3u8"
         done
 fi
