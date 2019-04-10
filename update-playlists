@@ -126,6 +126,6 @@ if [ -e "$playlist_root/By Source" ]; then
         | sort_tracks 3 4 \
         | cut -d"$TAB" -f1-2 \
         | while IFS="$TAB" read -r source link; do
-            echo "../$link" | tr '/' "\\" >>"$playlistdir/By Source/$source.m3u8"
+            echo "../../$link" | tr '/' "\\" >>"$playlistdir/By Source/$source.m3u8"
         done
 fi
