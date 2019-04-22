@@ -35,7 +35,7 @@ process_arguments() {
     destdir=
     library_root=
     playlist_relpath=
-    verbose=0
+    verbose=
     while getopts d:wer:p:vh opt; do
         case "$opt" in
             w)
@@ -94,11 +94,6 @@ process_arguments "$@"
 shift $((OPTIND - 1))
 
 for playlist; do
-    if [ $verbose -eq 1 ]; then
-        echo >&2 "Processing $playlist"
-    else
-        echo >&2 .
-    fi
     if [ "$destdir" = "-" ]; then
         newplaylist=/dev/stdout
     else
@@ -109,14 +104,12 @@ for playlist; do
         echo "#EXTM3U" >"$newplaylist"
     fi
 
-    rockuefort-list "$playlist" \
+    rockuefort-list ${verbose:+-v} "$playlist" \
         | extm3u_fragments \
         | sed -e "/^#/!s#^${library_root:+$library_root/}#${playlist_relpath:+$playlist_relpath/}#; ${winpath:+s#/#\\\\#g};" \
             >>"$newplaylist"
 
     if [ "$destdir" != "-" ] && ! [ -s "$newplaylist" ]; then
         rm -f "$newplaylist"
-    else
-        echo >&2 "Completed $playlist"
     fi
 done
