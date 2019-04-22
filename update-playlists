@@ -69,7 +69,7 @@ shift $((OPTIND - 1))
 
 list_playlists() {
     if [ $# -eq 0 ]; then
-        find "$playlist_root" -type f
+        find "$playlist_root" -type f -not -name .DS_Store
     else
         for arg; do
             echo "$arg"
