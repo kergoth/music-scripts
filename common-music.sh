@@ -1,5 +1,6 @@
 # shellcheck disable=SC2154,SC2001,SC2119,SC2120,SC2034
 
+TAB="$(printf '\t')"
 # Commonly used metadata variables
 tracknum_vars="track tracknumber tracktotal totaltracks"
 discnum_vars="disc discnumber disctotal totaldiscs"
