@@ -101,32 +101,33 @@ list_playlists "$@" | while read -r playlist; do
     fi
 done
 
-if [ -e "$playlist_root/Random Single Tracks" ]; then
-    echo >&2 "Processing Random Single Tracks.m3u8"
-    find Single\ Tracks -type l \
-        | sed -e 's#^#../#; s#/#\\#g' \
-        | sort -R >"$playlistdir/Random Single Tracks.m3u8"
-fi
-
-if [ -e "$playlist_root/By Source" ]; then
-    echo >&2 "Processing By Source playlists"
-    TAB="$(printf '\t')"
-    if command -v greadlink >/dev/null 2>&1; then
-        readlink=greadlink
-    else
-        readlink=readlink
+if [ -n "$playlist_root" ]; then
+    if [ -e "$playlist_root/Random Single Tracks" ]; then
+        echo >&2 "Processing Random Single Tracks.m3u8"
+        find Single\ Tracks -type l \
+            | sed -e 's#^#../#; s#/#\\#g' \
+            | sort -R >"$playlistdir/Random Single Tracks.m3u8"
     fi
 
-    mkdir -p "$playlistdir/By Source"
-    rm -f "$playlistdir/By Source"/*
-    music_find . \
-        | sed -e 's#^\./##' \
-        | xargs-paste "$readlink" -f \
-        | sed -n -e 's#\([^'"$TAB"']*'"$TAB"'\)\(.*/By Source\)/\([^/]*\)/\(.*\)#\3'"$TAB"'\1\2/\3/\4#p' \
-        | sort_tracks 3 4 \
-        | cut -d"$TAB" -f1-2 \
-        | sed -e "s#$TAB#$TAB../../#; s#/#\\\\#g" \
-        | while IFS="$TAB" read -r source link; do
-            printf '%s\n' "$link" >>"$playlistdir/By Source/$source.m3u8"
-        done
+    if [ -e "$playlist_root/By Source" ]; then
+        echo >&2 "Processing By Source playlists"
+        if command -v greadlink >/dev/null 2>&1; then
+            readlink=greadlink
+        else
+            readlink=readlink
+        fi
+
+        mkdir -p "$playlistdir/By Source"
+        rm -f "$playlistdir/By Source"/*
+        music_find . \
+            | sed -e 's#^\./##' \
+            | xargs-paste "$readlink" -f \
+            | sed -n -e 's#\([^'"$TAB"']*'"$TAB"'\)\(.*/By Source\)/\([^/]*\)/\(.*\)#\3'"$TAB"'\1\2/\3/\4#p' \
+            | sort_tracks 3 4 \
+            | cut -d"$TAB" -f1-2 \
+            | sed -e "s#$TAB#$TAB../../#; s#/#\\\\#g" \
+            | while IFS="$TAB" read -r source link; do
+                printf '%s\n' "$link" >>"$playlistdir/By Source/$source.m3u8"
+            done
+    fi
 fi
