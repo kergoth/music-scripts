@@ -217,6 +217,9 @@ for library_dir; do
 
         if echo "$releasetype" | tr '/,;' '   ' | grep -qwiE 'spokenword|audiobook|audio drama|interview'; then
             ddestdir="$destdir/Non-Music"
+            if [ -n "$genre" ]; then
+                ddestdir="$ddestdir/$genre"
+            fi
             dseparate=0
         else
             ddestdir="$destdir"
