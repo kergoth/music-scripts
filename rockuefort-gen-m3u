@@ -4,6 +4,7 @@
 set -e
 
 scriptdir="$(cd "$(dirname "$0")" && pwd -P)"
+PATH="$scriptdir:$PATH"
 TAB="$(printf '\t')"
 
 # shellcheck source=./trap.sh
@@ -89,35 +90,14 @@ extm3u_fragments() {
     fi
 }
 
-sort_playlist() {
-    if grep -q '^# nosort' "$playlist"; then
-        cat
-    else
-        sort_tracks
-    fi
-}
-
 process_arguments "$@"
 shift $((OPTIND - 1))
-
-tmpdir=$(mktemp -d -t "${0##*/}.XXXX")
-trap 'rm -rf "$tmpdir"' EXIT
-trap 'rm -rf "$tmpdir"; trap - INT; kill -INT $$' INT
-trap 'rm -rf "$tmpdir"; trap - TERM; kill -TERM $$' TERM
-tmpfile="$tmpdir/playlist"
-seen="$tmpdir/seen"
-newfiles="$tmpdir/new"
 
 for playlist; do
     if [ $verbose -eq 1 ]; then
         echo >&2 "Processing $playlist"
     else
         echo >&2 .
-    fi
-    if grep -q "^# shuffle" "$playlist"; then
-        shuffle=1
-    else
-        shuffle=
     fi
     if [ "$destdir" = "-" ]; then
         newplaylist=/dev/stdout
@@ -129,26 +109,10 @@ for playlist; do
         echo "#EXTM3U" >"$newplaylist"
     fi
 
-    >"$seen"
-    # shellcheck disable=SC2002
-    cat "$playlist" \
-        | grep -v '^#' \
-        | while read -r line; do
-            echo "$line" >"$tmpfile"
-            rockuefort list ${shuffle:+--shuffle} "$tmpfile" \
-                | sort_playlist >"$newfiles"
-
-            if grep -q '^# nodedupe' "$playlist" \
-                || echo "$line" | grep -q '^album=[^|]*$'; then
-                cat "$newfiles"
-            else
-                comm -13 "$seen" "$newfiles"
-            fi
-            cat "$newfiles" >>"$seen"
-        done \
-            | extm3u_fragments \
-            | sed -e "/^#/!s#^${library_root:+$library_root/}#${playlist_relpath:+$playlist_relpath/}#; ${winpath:+s#/#\\\\#g};" \
-                >>"$newplaylist"
+    rockuefort-list "$playlist" \
+        | extm3u_fragments \
+        | sed -e "/^#/!s#^${library_root:+$library_root/}#${playlist_relpath:+$playlist_relpath/}#; ${winpath:+s#/#\\\\#g};" \
+            >>"$newplaylist"
 
     if [ "$destdir" != "-" ] && ! [ -s "$newplaylist" ]; then
         rm -f "$newplaylist"
