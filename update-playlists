@@ -30,11 +30,12 @@ PATH="$scriptdir/../scripts:$PATH"
 
 usage() {
     cat >&2 <<END
-    ${0##*/} [options] [PLAYLIST_DIR]
+    ${0##*/} [options] [PLAYLIST_DIR | PLAYLIST [PLAYLIST..]]
 
-    PLAYLIST_DIR defaults to $playlistdir
+    PLAYLIST_DIR defaults to $playlistdir if no args are passed.
 
     Options:
+    -p OUTPUT_DIR Specify where the new playlists will end up
     -h    Show this usage info
     -e    Write an extended m3u
     -v    Verbose mode
