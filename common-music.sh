@@ -330,13 +330,13 @@ get_album_track_total_indiv_discs() {
 music_find() {
     finddir="$1"
     shift
-    find -H "$finddir" \( -type f -o -type l \) -not -name ._\* \( -iname \*.flac -o -iname \*mp3 -o -iname \*.m4a -o -iname \*.ogg -o -iname \*.dsf \) "$@"
+    find -L "$finddir" \( -type f -o -type l \) -not -name ._\* \( -iname \*.flac -o -iname \*mp3 -o -iname \*.m4a -o -iname \*.ogg -o -iname \*.dsf \) "$@"
 }
 
 nonmusic_find() {
     finddir="$1"
     shift
-    find -H "$finddir" \( -type f -o -type l \) -not \( -name ._\* -o -iname \*.flac -o -iname \*mp3 -o -iname \*.m4a -o -iname \*.ogg -o -iname \*.dsf \) "$@"
+    find -L "$finddir" \( -type f -o -type l \) -not \( -name ._\* -o -iname \*.flac -o -iname \*mp3 -o -iname \*.m4a -o -iname \*.ogg -o -iname \*.dsf \) "$@"
 }
 
 # We need to get the total tracks for all discs to get a true total
