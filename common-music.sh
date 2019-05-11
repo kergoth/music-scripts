@@ -457,6 +457,19 @@ sort_tracks() {
         | sed -e 's#\(.*\)	\([^	]*\)$#\1/\2#'
 }
 
+sort_tracks_3() {
+    _field1="${1:-1}"
+    _field2="${2:-2}"
+    _field3="${3:-}"
+    _field1b="$(echo "$_field1" | sed -e 's#[bdfingMr]*$##')"
+    _field2b="$(echo "$_field2" | sed -e 's#[bdfingMr]*$##')"
+    _field3b="$(echo "$_field3" | sed -e 's#[bdfingMr]*$##')"
+    sed -e 's#\(.*\)/\([^/]*\)$#\1	\2#' \
+        | gsort -s -t"$TAB" "-k$_field1b,$_field1" "-k$_field2b,$_field2" ${3:+"-k$_field3b,$_field3"} \
+        | uniq \
+        | sed -e 's#\(.*\)	\([^	]*\)$#\1/\2#'
+}
+
 # shellcheck disable=SC2183
 preparebar() {
 # $1 - bar length
