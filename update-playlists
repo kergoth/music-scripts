@@ -151,7 +151,7 @@ if [ -n "$playlist_root" ]; then
                 done \
                 | sort_tracks_3 1nr 2 3n \
                 | sed -e 's#^[^	]*	##' \
-                | sed -e 's#//#/#g; s#^#../#; s#/#\\#g' \
+                | sed -e 's#//#/#g; s#^#../../#; s#/#\\#g' \
                 >"$outfile"
             nprev_outfile="$playlistdir/Recent/Last $prev_timeframe Days.m3u8"
             if [ -s "$nrpev_outfile" ]; then
