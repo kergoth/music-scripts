@@ -1,6 +1,7 @@
 # shellcheck disable=SC2154,SC2001,SC2119,SC2120,SC2034
 
 TAB="$(printf '\t')"
+
 # Commonly used metadata variables
 tracknum_vars="track tracknumber tracktotal totaltracks"
 discnum_vars="disc discnumber disctotal totaldiscs"
@@ -449,23 +450,19 @@ echo "$genre"
 }
 
 sort_tracks() {
-    _field1="${1:-1}"
-    _field2="${2:-2}"
-    sed -e 's#\(.*\)/\([^/]*\)$#\1	\2#' \
-        | gsort -s -t"$TAB" "-k$_field1,$_field1" "-k$_field2,${_field2}n" \
-        | uniq \
-        | sed -e 's#\(.*\)	\([^	]*\)$#\1/\2#'
-}
+    if [ $# -eq 0 ]; then
+        set -- 1 2n
+    fi
 
-sort_tracks_3() {
-    _field1="${1:-1}"
-    _field2="${2:-2}"
-    _field3="${3:-}"
-    _field1b="$(echo "$_field1" | sed -e 's#[bdfingMr]*$##')"
-    _field2b="$(echo "$_field2" | sed -e 's#[bdfingMr]*$##')"
-    _field3b="$(echo "$_field3" | sed -e 's#[bdfingMr]*$##')"
+    for i in $(seq 1 $#); do
+        arg=$1
+        shift
+        argb="$(echo "$arg" | sed -e 's#[bdfingMr]*$##')"
+        set -- "$@" -k"$argb,$arg"
+    done
+
     sed -e 's#\(.*\)/\([^/]*\)$#\1	\2#' \
-        | gsort -s -t"$TAB" "-k$_field1b,$_field1" "-k$_field2b,$_field2" ${3:+"-k$_field3b,$_field3"} \
+        | gsort -s -t"$TAB" "$@" \
         | uniq \
         | sed -e 's#\(.*\)	\([^	]*\)$#\1/\2#'
 }

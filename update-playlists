@@ -149,7 +149,7 @@ if [ -n "$playlist_root" ]; then
                             ;;
                     esac
                 done \
-                | sort_tracks_3 1nr 2 3n \
+                | sort_tracks 1nr 2 3n \
                 | sed -e 's#^[^	]*	##' \
                 | sed -e 's#//#/#g; s#^#../../#; s#/#\\#g' \
                 >"$outfile"
