@@ -118,6 +118,8 @@ if [ -n "$playlist_root" ]; then
     # FIXME: avoid looking up mtimes repeatedly by gathering them up outside
     # of find up front, then filter by distance from the current time
     if [ -e "$playlist_root/Recent" ]; then
+        echo >&2 "Processing Recent playlists"
+
         mkdir -p "$playlistdir/Recent"
         rm -f "$playlistdir/Recent"/*
 
