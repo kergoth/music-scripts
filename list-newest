@@ -1,7 +1,7 @@
 #!/bin/sh
 
 cd "$(dirname "$0")" || exit $?
-find . -mtime -7 \( -iname \*.flac -o -iname \*.mp3 -o -iname \*.m4a -o -iname \*.dsf \) \
+find . -mtime ${1:--7} \( -iname \*.flac -o -iname \*.mp3 -o -iname \*.m4a -o -iname \*.dsf \) \
     | sed -e 's#^\./##; s#/[^/]*$##' \
     | uniq \
     | tr '\n' '\0' \
