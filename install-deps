@@ -1,0 +1,5 @@
+#!/bin/sh
+
+brew install ffmpeg
+pipv3 rockuefort git+https://github.com/kalgynirae/rockuefort
+pipv3 unidecode
