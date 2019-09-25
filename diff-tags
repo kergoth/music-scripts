@@ -1,0 +1,64 @@
+#!/bin/sh
+
+set -eu
+
+exclude() {
+    if [ -n "$exclusion" ]; then
+        grep -Ev "^$exclusion"
+    else
+        cat
+    fi
+}
+
+usage() {
+    echo >&2 "Usage: ${0##*/} [-[0123h]] FILE1 FILE2"
+    exit 1
+}
+
+comm_arg=-3
+case "$1" in
+    -[123]*)
+        comm_arg="$1"
+        shift
+        ;;
+    -0)
+        comm_arg=
+        shift
+        ;;
+    -h)
+        usage
+        ;;
+esac
+
+exclusion=
+if echo "$comm_arg" | grep -q 1; then
+    exclusion="-"
+fi
+if echo "$comm_arg" | grep -q 2; then
+    exclusion="$exclusion|\+"
+fi
+if echo "$comm_arg" | grep -q 3; then
+    exclusion="$exclusion| "
+fi
+exclusion="${exclusion#|}"
+
+if [ $# -ne 2 ]; then
+    usage
+fi
+
+file1="$1"
+file2="$2"
+
+tmpfile1=$(mktemp -t "${0##*/}.XXXX")
+tmpfile2=$(mktemp -t "${0##*/}.XXXX")
+trap 'rm -f "$tmpfile1" "$tmpfile2"' EXIT INT TERM
+
+if ! cmp -s "$file1" "$file2"; then
+    ffprobe_tags "$file1" | sed -e 's#^#./#' | sort >>"$tmpfile1"
+    ffprobe_tags "$file2" | sed -e 's#^#./#' | sort >>"$tmpfile2"
+    comm "$tmpfile1" "$tmpfile2" \
+        | sort -b \
+        | sed 's#^	./#+#; s#^\./#-#; s#^		\./# #' \
+        | exclude \
+        | python3 -c "import sys; d=sys.stdin.read(); print(d); sys.exit(bool(d))"
+fi
