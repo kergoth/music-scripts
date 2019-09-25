@@ -43,7 +43,7 @@ shift $((OPTIND - 1))
 get_acoustids() {
     ffprobe -v quiet -of flat=s=_ -show_entries format_tags "$1" \
         | cut -d_ -f3- \
-        | grep -Ei "^acoustid|acoustid_(id|fingerprint)'=" | while IFS='=' read -r key value; do
+        | grep -Ei "^Acoustid Id|acoustid|acoustid_(id|fingerprint)'=" | while IFS='=' read -r key value; do
             printf '%s=%s\n' "$(echo "$key" | tr '[:upper:]' '[:lower:]')" "$value"
         done
 }
