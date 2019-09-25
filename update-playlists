@@ -36,7 +36,7 @@ usage() {
     PLAYLIST_DIR defaults to $playlistdir if no args are passed.
 
     Options:
-    -p OUTPUT_DIR Specify where the new playlists will end up
+    -p OUTPUT_DIR Specify where the new playlists will end up. Default: ./_Playlists
     -h    Show this usage info
     -e    Write an extended m3u
     -v    Verbose mode
@@ -81,11 +81,13 @@ list_playlists() {
 
 if [ $# -eq 0 ]; then
     playlist_root=../Playlists
+elif [ $# -eq 1 ] && [ -d "$1" ]; then
+    playlist_root="$1"
+    shift
 else
     playlist_root=
 fi
 
-cd "$scriptdir"
 mkdir -p "$playlistdir"
 list_playlists "$@" | while read -r playlist; do
     if [ -n "$playlist_root" ]; then
@@ -179,6 +181,7 @@ if [ -n "$playlist_root" ]; then
             | sed -e 's#^\./##' \
             | xargs-paste "$readlink" -f \
             | sed -n -e 's#\([^'"$TAB"']*'"$TAB"'\)\(.*/By Source\)/\([^/]*\)/\(.*\)#\3'"$TAB"'\1\2/\3/\4#p' \
+            | sed -n -e 's#\([^'"$TAB"']*'"$TAB"'\)\(.*/Library\)/\([^/]*\)/\(.*\)#\3'"$TAB"'\1\2/\3/\4#p' \
             | sort_tracks 3 4 \
             | cut -d"$TAB" -f1-2 \
             | sed -e "s#$TAB#$TAB../../#; s#/#\\\\#g" \
